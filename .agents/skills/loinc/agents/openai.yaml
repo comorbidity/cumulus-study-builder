@@ -1,0 +1,4 @@
+interface:
+  display_name: "LOINC"
+  short_description: "Build evidence-backed laboratory valuesets"
+  default_prompt: "Use $loinc to design and validate a LOINC laboratory valueset, compare it with local FHIR codes, and write reviewable Athena discovery SQL without executing it."

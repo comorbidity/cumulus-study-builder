@@ -1,0 +1,47 @@
+# Stock pyproject.toml for installing dependencies and packaging.
+# Change `name`, `description`, `Source`, and the flit include to your study.
+
+[project]
+# Change this to reference the name of your study
+name = "cumulus-study-builder"
+version = "0.1.0"
+requires-python = ">= 3.11"
+dependencies = [
+    # keep to the latest minor version of cumulus-library
+    "cumulus-library >= 6.2.0",
+    "sqlfluff >= 2.3.4",
+    "pandas <3, >=2.1.3",
+    "pydantic",
+    "jinja2",
+    "tomli-w",
+    # Optional NLP/elastic integration (uncomment if you use the chart-review
+    # sampling + rapid-elastic pipeline):
+    # "rapid-elastic @ git+https://github.com/smart-on-fhir/rapid-elastic.git@main",
+]
+description = "A generic Cumulus Library study starter (study-builder spine)."
+readme = "README.md"
+license = { text = "Apache License 2.0" }
+classifiers = [
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+[project.urls]
+Home = "https://smarthealthit.org/cumulus-a-universal-sidecar-for-a-smart-learning-healthcare-system/"
+Documentation = "https://docs.smarthealthit.org/cumulus/"
+# Change this to your github URL
+Source = "https://github.com/smart-on-fhir/cumulus-study-builder"
+
+[build-system]
+requires = ["flit_core >=3.4,<4"]
+build-backend = "flit_core.buildapi"
+
+[project.optional-dependencies]
+dev = ["black", "pylint"]
+test = ["pytest", "pytest-cov", "pytest-xdist"]
+
+[tool.flit.sdist]
+# change this to the name of the study folder inside the module directory
+include = ["cumulus_study_builder/"]
