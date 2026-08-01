@@ -9,13 +9,11 @@ from enum import StrEnum
 from pydantic import BaseModel, Field
 from cumulus_study_builder.llm.models.base import SpanAugmentedMention, DatePrecision
 
-
 class LabInterpretation(StrEnum):
     LOW = "LOW"
     NORMAL = "NORMAL"
     HIGH = "HIGH"
     NONE_OF_THE_ABOVE = "NONE_OF_THE_ABOVE"
-
 
 class LabValueMention(SpanAugmentedMention):
     """
