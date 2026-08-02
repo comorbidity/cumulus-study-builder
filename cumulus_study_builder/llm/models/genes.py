@@ -1,5 +1,3 @@
-import json
-import os
 from enum import StrEnum
 from pydantic import BaseModel, Field
 from cumulus_study_builder.llm.models.base import SpanAugmentedMention
@@ -17,13 +15,12 @@ from cumulus_study_builder.llm.models.base import SpanAugmentedMention
 # Genetic Variants
 ###############################################################################
 class GeneticVariantInterpretation(StrEnum):
-    B = "BENIGN"
-    LB = "LIKELY BENIGN"
-    VUS = "VARIANT OF UNKNOWN SIGNIFICANCE"
-    P = "PATHOGENIC"
-    LP = "LIKELY PATHOGENIC"
-    NOT_MENTIONED = "NOT MENTIONED"
-
+    BENIGN = "BENIGN"
+    LIKELY_BENIGN = "LIKELY_BENIGN"
+    VUS = "VUS"
+    PATHOGENIC = "PATHOGENIC"
+    LIKELY_PATHOGENIC = "LIKELY_PATHOGENIC"
+    NONE_OF_THE_ABOVE = "NONE_OF_THE_ABOVE"
 
 class GeneticVariantMention(SpanAugmentedMention):
     """
@@ -32,7 +29,7 @@ class GeneticVariantMention(SpanAugmentedMention):
     hgnc_name: str | None = Field(default=None, description="HGNC/HUGO gene naming convention")
 
     interpretation: GeneticVariantInterpretation = Field(
-        GeneticVariantInterpretation.NOT_MENTIONED,
+        GeneticVariantInterpretation.NONE_OF_THE_ABOVE,
         description="Clinical interpretation of genetic variant or genetic test result",
     )
 
