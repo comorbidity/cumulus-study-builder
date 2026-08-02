@@ -6,8 +6,9 @@ description: >-
   aspect_name.csv (required system, code, display, plus optional per-code columns
   like tier, rank, subtype, or category) targeting a FHIR resource — dx=Condition,
   rx=MedicationRequest, lab=Observation lab, proc=Procedure, diag=DiagnosticReport —
-  and each produces an example__cohort_ table sub-selected from study_population that
-  flows into the UNION and wide per-aspect tables. Use whenever someone wants to
+  and each produces an example__cohort_ table selected from
+  example__encounter_ASPECT that flows into the UNION and wide per-aspect tables.
+  Use whenever someone wants to
   create, edit, or add a coded study variable or valueset (labs, diagnoses,
   medications, procedures, diagnostic reports, symptoms), pick or expand codes, or
   rebuild the study_variable / study_variable_wide stage. Offer two modes:
@@ -24,13 +25,13 @@ Replace `example` below with your study prefix.
 
 A variable targets one FHIR resource ("aspect"):
 
-| Aspect | FHIR resource | study_population table | code / system columns |
+| Aspect | FHIR resource | Encounter evidence table | code / system columns |
 |---|---|---|---|
-| `dx` | Condition | `example__cohort_study_population_dx` | `dx_code` / `dx_system` |
-| `rx` | MedicationRequest | `example__cohort_study_population_rx` | `rx_code` / `rx_system` |
-| `lab` | Observation (category lab) | `example__cohort_study_population_lab` | `lab_observation_code` / `lab_observation_system` |
-| `proc` | Procedure | `example__cohort_study_population_proc` | `proc_code` / `proc_system` |
-| `diag` | DiagnosticReport | `example__cohort_study_population_diag` | `diag_code` / `diag_system` |
+| `dx` | Condition | `example__encounter_dx` | `dx_code` / `dx_system` |
+| `rx` | MedicationRequest | `example__encounter_rx` | `rx_code` / `rx_system` |
+| `lab` | Observation (category lab) | `example__encounter_lab` | `lab_observation_code` / `lab_observation_system` |
+| `proc` | Procedure | `example__encounter_proc` | `proc_code` / `proc_system` |
+| `diag` | DiagnosticReport | `example__encounter_diag` | `diag_code` / `diag_system` |
 
 ## How the stage generates (never hand-edit the SQL)
 
@@ -38,7 +39,7 @@ A variable targets one FHIR resource ("aspect"):
 1. Writes `spreadsheet/file_upload_study_variable.toml` from the valueset CSVs
    (each `<aspect>_<name>.csv` → `example__valueset_<name>`).
 2. Generates one `athena/example__cohort_<name>.sql` per variable — a
-   `SELECT DISTINCT *` of `study_population_<aspect>` joined to `valueset_<name>` on
+   `SELECT DISTINCT *` of `encounter_<aspect>` joined to `valueset_<name>` on
    **code + system** (extra CSV columns like `tier` flow through the `*`).
 3. Writes `study_variable.toml` (the build list).
 
@@ -78,7 +79,7 @@ several codes fire), `subtype` (a code that applies to one arm vs another),
 **Propagation caveat:** optional columns live in the individual
 `example__cohort_<name>` table. They are **not** automatically carried into
 `example__cohort_variable_union_*` or `example__cohort_variable_wide_*`, which
-project a fixed set (`variable, code, display, system` plus the study_population
+project a fixed set (`variable, code, display, system` plus the encounter
 aspect columns). To use an optional column in the wide/union layer, join back to
 `example__cohort_<name>` on `code` + `system`, or extend the `template/` union/wide
 source to carry it.
@@ -131,7 +132,7 @@ automatically — no manual wiring.
 
 ## What downstream sees
 
-`example__cohort_<name>` is the variable's cohort (population rows matching the
+`example__cohort_<name>` is the variable's cohort (encounter evidence rows matching the
 valueset). `example__cohort_variable_wide_<aspect>` exposes it as `<name>_date`,
 `<name>_status`/`_onset`, `<name>_ref`, etc. — the join surface the eligible and
 example layers use. A well-named, well-coded variable becomes immediately usable by

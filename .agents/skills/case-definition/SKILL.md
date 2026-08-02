@@ -66,7 +66,7 @@ pipeline, in build order:
 
 1. **file_upload** `casedef.csv` → `example__valueset_casedef`.
 2. **candidate** (`cohort_casedef_candidate`) — every subject with any coded evidence
-   across `study_population_{dx,rx,proc,lab,diag,doc}` whose `system` + `code` matches
+   across `encounter_{dx,rx,proc,lab,diag,doc}` whose `system` + `code` matches
    `valueset_casedef`. Carries the casedef columns (subtype, tier), the matching
    resource, and which aspect matched.
 3. **exclude** (`cohort_casedef_exclude`) — a user-defined stub, currently
@@ -77,7 +77,7 @@ pipeline, in build order:
    first case-defining encounter, then labels every encounter `pre` / `peri` / `post`
    with `days_since` and `ordinal_since`, carrying subtype, tier, and demographics.
 6. **aspects** (`cohort_casedef_{dx,lab,proc,rx}`) — the case cohort joined to each
-   `study_population_<aspect>` and to `cohort_variable_union`, carrying the casedef
+   `encounter_<aspect>` and to `cohort_variable_union`, carrying the casedef
    columns through a `{% for col in casedef_columns %}` loop (so adding a column to
    casedef.csv flows into these automatically).
 7. **timeline** (`cohort_timeline`) — casedef + all variables wide + rich encounter

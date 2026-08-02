@@ -18,7 +18,7 @@ description: >-
 
 # eligible — computable phenotype + analytic spine
 
-The `eligible` stage turns the built study (population, variables, case
+The `eligible` stage turns the built study (study encounters, variables, case
 definition, optional chart-review) into the tables an analyst actually runs a
 study on: an index/anchor date per subject, treatment lines, a time-to-event
 outcome, risk-set eligibility, and a survival/matching **analysis spine**. Its

@@ -237,5 +237,5 @@ lines, multiple classes per patient) need cluster-robust handling downstream.
 
 The `eligible` skill owns `template/eligible_*.sql`, `tools/eligible.py`,
 `eligible.toml`, and the guided `example_eligible_*` cohort views. It reads the
-outputs of study-population, study-variable, case-definition, and chart-review — so
+outputs of study-encounter, study-variable, case-definition, and chart-review — so
 build those first (see the study-builder spine skill).

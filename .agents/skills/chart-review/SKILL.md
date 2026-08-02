@@ -251,7 +251,7 @@ task tables:
 Build each extraction selector from both signals. Select a note when the task's topic
 is `EXPLICIT` or `IMPLICIT`, **or** when its document type is in that task's deliberate
 high-recall allowlist. Join on `note_ref` and validate `subject_ref`; join case
-definition or population only for cohort scope and metadata. Point the downstream
+definition or study encounter only for cohort scope and metadata. Point the downstream
 task's `select_by_table` at this selector.
 
 Choose one canonical row per note and selector version/model before joining so repeat

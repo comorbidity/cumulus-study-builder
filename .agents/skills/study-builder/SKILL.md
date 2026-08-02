@@ -2,14 +2,14 @@
 name: study-builder
 description: >-
   Orchestration spine for building a Cumulus Library study from the cumulus-study-builder
-  starter. Connects the stage and companion skills into one workflow: study-population,
+  starter. Connects the stage and companion skills into one workflow: study-encounter,
   study-variable (with the rxnorm and loinc valueset companions), case-definition,
   chart-review and rapid-elastic for clinical-note evidence, and eligible.
   tools/study_builder.py regenerates every stage's submanifest TOML and rendered athena
   SQL in one pass. Use whenever someone wants to build, scaffold, or plan a whole study,
   understand the pipeline and stage dependencies, pick the next stage or skill, or
   regenerate the manifests. On start, ask whether they want the full guided build
-  (population, variables, case definition, note extraction, eligible) or to jump to a
+  (encounters, variables, case definition, note extraction, eligible) or to jump to a
   specific stage. Generators are the source of truth — never hand-edit the generated
   tomls or athena SQL; edit the inputs and regenerate.
 ---
@@ -35,7 +35,7 @@ python -m cumulus_study_builder.tools.study_builder
 | Skill | Role in the build |
 |---|---|
 | **study-builder** | This spine. sequences and regenerates; delegates authoring. |
-| **study-population** | Stage 1. the base cohort (study period, age, gender, encounter utilization). |
+| **study-encounter** | Stage 1. encounter filtering by study period, demographics, and utilization. |
 | **study-variable** | Stage 2. coded valueset CSVs per FHIR aspect (dx, rx, lab, proc, diag). |
 | **rxnorm** | Companion to study-variable. medication (`rx_`) valuesets via RxNorm / RxClass. |
 | **loinc** | Companion to study-variable. lab / DiagnosticReport (`lab_`, `diag_`) valuesets via LOINC. |
@@ -60,7 +60,7 @@ On invocation, ask which the researcher wants (offer both):
 
 | # | Stage | Skill(s) | Generator | Depends on |
 |---|---|---|---|---|
-| 1 | Study population | study-population | study_population.py | core FHIR |
+| 1 | Study encounter | study-encounter | study_encounter.py | core FHIR |
 | 2 | Study variables | study-variable (+ **rxnorm** rx, **loinc** lab/diag) | study_variable.py | 1 |
 | 3 | Variable union / wide | study-variable | study_variable_wide.py | 2 |
 | 4 | Case definition | case-definition | casedef.py | 1, 2 |
@@ -68,16 +68,20 @@ On invocation, ask which the researcher wants (offer both):
 | 6 | Note extraction | chart-review (LLM) and/or rapid-elastic (Elastic) | llm/create_*.py / elastic | 5 |
 | 7 | Eligible (phenotype + spine) | eligible | eligible.py | 2, 4, 6 |
 
-Dependencies are why order matters: case-definition scans the study-population aspects
+Dependencies are why order matters: case-definition scans the study-encounter aspects
 and joins the casedef valueset; eligible reads casedef, the variable-wide tables, and
 the note-extraction outputs. Build earlier stages first.
+
+The stage name remains `study_encounter`; its Athena tables use the shorter
+`<prefix>__encounter*` namespace. Valueset-selected variable tables retain the distinct
+`<prefix>__cohort_<variable>` namespace.
 
 ## Guided build
 
 Walk the researcher through the stages in order, delegating to each skill:
 
-1. **Population** — invoke `study-population`: set study period / age / gender /
-   utilization. the base cohort everything filters from.
+1. **Encounters** — invoke `study-encounter`: set study period, age, gender, and
+   utilization criteria. This encounter selection scopes everything downstream.
 2. **Variables** — invoke `study-variable` for each coded valueset. For medications
    delegate to **rxnorm** (class-first RxNorm/RxClass `rx_` valuesets); for labs and
    DiagnosticReports delegate to **loinc** (`lab_` / `diag_` valuesets). Each becomes a
@@ -105,7 +109,7 @@ Then regenerate all manifests (`study_builder.py`) and run `cumulus-library buil
 
 If the researcher names a task, skip the wizard and route:
 
-- "study period / age / who's included" → `study-population`
+- "study period / age / encounter utilization / which encounters" → `study-encounter`
 - "add/edit a coded variable / valueset / codes" → `study-variable`
 - "medication / drug class / rx valueset" → `rxnorm`
 - "lab / analyte / LOINC / DiagnosticReport valueset" → `loinc`
