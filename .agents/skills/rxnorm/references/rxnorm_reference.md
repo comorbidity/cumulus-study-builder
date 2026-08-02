@@ -97,8 +97,31 @@ Base `https://rxnav.nlm.nih.gov/REST`:
 - `/rxcui/{rxcui}/ndcs.json` → NDCs for a concept.
 - RxClass `/rxclass/classMembers.json?...` as above.
 
-No key is required for RxNav REST. it is the fast first pass. the local tables are the
-reproducible, offline, versioned pass.
+No key is required for ordinary RxNav REST. It is the fast first pass. The local
+tables are the reproducible, offline, versioned pass.
+
+### Optional UTS and VSAC lookup with `UMLS_API_KEY`
+
+When `UMLS_API_KEY` is exported, a secure client may also make read-only calls to the
+UMLS REST and VSAC services:
+
+- UTS base: `https://uts-ws.nlm.nih.gov/rest`.
+- Search current RxNorm source content with `/search/current`, `sabs=RXNORM`, and a
+  source-oriented `returnIdType` such as `sourceUi` when the desired output is an
+  RxNorm identifier rather than a UMLS CUI.
+- Use `/content/current/.../atoms` and source relations to inspect source names and
+  relationships. Use VSAC FHIR expansion for a known reviewed value-set OID.
+- The Cumulus Library CLI also recognizes `UMLS_API_KEY` as the environment-variable
+  equivalent of `--umls-key` for VSAC and terminology download/build workflows.
+
+Read the key from the environment only inside the authenticated client. Never echo it,
+place it in a displayed request URL, or persist it in SQL, CSV, response provenance,
+logs, or caches. Record the resolved UMLS/RxNorm release because `current` changes.
+
+The RxNorm proprietary-information endpoint is the exception to the usual key-free
+RxNav rule: it can use the UTS API key as an `Authorization: Bearer` credential for
+licensed source atoms. Do not send that header to ordinary RxNorm/RxClass endpoints.
+Respect RxNav and UTS rate limits and terms of service.
 
 ## SQL patterns (WRITE these for the researcher. do not run them)
 

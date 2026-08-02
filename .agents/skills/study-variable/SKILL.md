@@ -95,6 +95,35 @@ Code systems by aspect (for choosing `system`):
 - **lab / diag:** LOINC `http://loinc.org`, plus SNOMED and local `urn:oid:...`.
 - **proc:** CPT `http://www.ama-assn.org/go/cpt`, HCPCS, ICD-10-PCS, SNOMED.
 
+## Optional online terminology lookup
+
+Check whether `UMLS_API_KEY` is present in the environment without printing or
+returning its value. When it is present and network access is available, use
+read-only UMLS Terminology Services (UTS) and VSAC requests as a fast candidate-code
+path before writing local terminology SQL:
+
+- Search UTS by clinical term or source code and restrict `sabs` to the intended
+  vocabulary. Request source identifiers rather than accepting a UMLS CUI as the
+  study code. Discover current source abbreviations from UTS metadata instead of
+  guessing them.
+- Use UTS atoms and source relations to inspect synonyms and mappings. Use VSAC
+  expansions when a reviewed value set is relevant.
+- Delegate medication expansion to `rxnorm` and LOINC laboratory/report selection to
+  `loinc`; those skills define the vocabulary-specific API workflow.
+
+Credential boundaries matter. Standard RxNav/RxClass REST calls do not require the
+UMLS key, so do not attach it to ordinary RxNav requests. `UMLS_API_KEY` can search
+LOINC content through the UMLS source vocabulary, but it does not authenticate the
+official LOINC FHIR service, which uses separate LOINC credentials.
+
+Never put a credential in a generated CSV, SQL file, URL shown to the user, command
+output, cache key, or log. Do not send PHI or patient-derived free text to a
+terminology API. Record the service, terminology release/version, query, source
+vocabulary, and retrieval date with the candidates. Online results remain candidates
+until human review and reconciliation with `discovery__code_sources`. If credentials,
+network access, or the needed endpoint are unavailable, fall back to written local
+Athena SQL and clearly label the result as unverified until the researcher runs it.
+
 ## Two authoring modes — ask which up front
 
 **"I'm feeling lucky"** — generate a best-effort candidate valueset immediately:

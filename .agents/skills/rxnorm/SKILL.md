@@ -28,6 +28,29 @@ with your study prefix.
 RxNorm/RxClass knowledge and the public APIs, then hands the researcher SQL to
 execute against their own Athena. It never executes queries itself.
 
+## Optional online lookup with `UMLS_API_KEY`
+
+Check whether `UMLS_API_KEY` is present without printing or returning its value. Use
+the online path for fast candidate discovery when network access is available:
+
+1. Use ordinary RxNav RxNorm/RxClass REST endpoints first. They normally require no
+   key and should not receive `UMLS_API_KEY`.
+2. When the key is present, additionally use UTS REST searches restricted to
+   `sabs=RXNORM`, source atoms/relations, and VSAC expansions when appropriate. This
+   can resolve current source identifiers and synonyms without waiting for a local
+   Athena terminology build.
+3. Supply the key only to endpoints that require it. The unusual RxNav proprietary
+   information endpoint may accept the UTS key as a Bearer credential; do not send
+   the key to other RxNav endpoints.
+
+Never interpolate the key into a displayed URL or shell command, and never write it
+to CSV, SQL, logs, caches, or chat. Send only terminology search terms or codes, never
+PHI. Respect API rate limits. Record endpoint, RxNorm/UMLS release, class axis,
+parameters, and retrieval date. Treat online results as candidates and still run the
+site-presence and human-review steps. If online access fails, write the local
+RxNorm/UMLS Athena SQL instead; the local release remains the preferred reproducible
+snapshot for a publishable derivation.
+
 ## What it produces
 
 A study-variable rx valueset CSV: `spreadsheet/rx_class_<name>.csv` (or
@@ -68,10 +91,11 @@ Single-ingredient or named-drug valuesets are the same pipeline starting at step
 
 Use the cheapest sufficient rung. escalate for completeness or reproducibility:
 
-1. **Internal RxNorm knowledge + RxNorm REST / RxClass APIs.** Fast first pass. map
-   the class to ingredients, brands, and products, and to rxcui, using known
-   generic/brand/other names and the APIs (`rxclass`, `/rxcui`, `/related`,
-   `/approximateTerm`). Good for a candidate valueset in one pass.
+1. **Internal RxNorm knowledge + online APIs.** Fast first pass. Map the class to
+   ingredients, brands, products, and rxcui using public RxNorm/RxClass endpoints
+   (`rxclass`, `/rxcui`, `/related`, `/approximateTerm`) and, when
+   `UMLS_API_KEY` is present, UTS/VSAC as described above. Good for a candidate
+   valueset in one pass.
 2. **Write SQL against the local terminology (do not run it).** For reproducibility
    and completeness, author SQL against the Athena `rxnorm` schema
    (`rxnorm__rxnconso`, `rxnorm__rxnrel`, `rxnorm__rxnsat`) and, for cross-vocabulary

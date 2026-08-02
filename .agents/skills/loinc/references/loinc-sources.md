@@ -21,9 +21,11 @@ Prefer primary sources:
 - Cumulus valueset workflow: <https://docs.smarthealthit.org/cumulus/library/workflows/valueset.html>
 - Cumulus LOINC study: <https://github.com/smart-on-fhir/cumulus-library-loinc>
 
-The LOINC FHIR service requires a LOINC account. Never place the username or password
-in a URL, source file, command output, or chat response. Use the supported secure
-credential mechanism.
+The LOINC FHIR service requires a LOINC account and uses a LOINC username and
+password. In Cumulus Library these may be supplied through `LOINC_USER` and
+`LOINC_PASSWORD`. `UMLS_API_KEY` is not a substitute. Never place any credential in a
+URL, source file, command output, log, cache, or chat response. Use the supported
+secure credential mechanism.
 
 Useful FHIR operations include:
 
@@ -36,6 +38,27 @@ GET https://fhir.loinc.org/ValueSet/<LG-id>/$validate-code?system=http://loinc.o
 Record the LOINC version returned by the service. A current unversioned expansion can
 change as new terms are added to a Group. Pin or record the release used for a
 reproducible study.
+
+### Optional UTS lookup with `UMLS_API_KEY`
+
+UMLS includes LOINC as source vocabulary `LNC`. When `UMLS_API_KEY` is exported, use
+UTS REST as a fast read-only source-code lookup before asking the researcher to run
+local LOINC Athena SQL:
+
+- Search `/rest/search/current` with `sabs=LNC` and a source-oriented
+  `returnIdType`, such as `sourceUi`, to retrieve LOINC source identifiers rather than
+  treating a UMLS CUI as the observation code.
+- Inspect `/rest/content/current/source/LNC/{code}/relations` for source-asserted
+  relationships when relevant.
+- Retrieve current source abbreviations from `/rest/metadata/current/sources` rather
+  than guessing. The metadata endpoint is public; terminology content calls require
+  the key.
+
+Read the key only inside the authenticated client. Never interpolate it into a shell
+command or displayed URL. Do not send PHI. Record the UMLS release, query, endpoint,
+and retrieval date. UTS can discover LOINC codes and relations, but official LOINC
+resources remain authoritative for current status, six-axis properties, Groups,
+panels, and version-specific validation.
 
 ## LOINC term structure
 
@@ -152,4 +175,3 @@ Track candidates using labels such as:
 
 Do not write these as CSV columns unless downstream code consumes them. Keep them in
 the review record or SQL result instead.
-

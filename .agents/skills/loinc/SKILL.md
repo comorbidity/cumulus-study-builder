@@ -30,6 +30,29 @@ Read the relevant references before working:
   interpretation, reference ranges, and the Cumulus workflow.
 - `references/athena-query-patterns.md` before writing discovery or local LOINC SQL.
 
+## Optional online lookup and credentials
+
+Check for credentials by presence only; never print or return their values.
+
+- When `UMLS_API_KEY` is set and network access is available, use UTS REST for fast
+  candidate discovery. Restrict searches and source content to the UMLS LOINC source
+  abbreviation `LNC`, request source identifiers, and inspect source relations when
+  useful. This can be faster than asking the researcher to run local LOINC Athena SQL.
+- `UMLS_API_KEY` does not authenticate `https://fhir.loinc.org`. The official LOINC
+  FHIR terminology service requires separate `LOINC_USER` and `LOINC_PASSWORD`
+  credentials. Use `$lookup`, `$expand`, and `$validate-code` there only when those
+  credentials are available through a secure client.
+- UTS LOINC content is a useful terminology lookup, not a replacement for official
+  LOINC Group/panel resources or full six-axis and status validation. Record the UMLS
+  and LOINC versions returned by each source and reconcile differences explicitly.
+
+Never place any credential in a URL shown to the user, SQL, CSV, logs, caches, or
+chat. Never send PHI or patient-derived text to a terminology service. Record the
+endpoint, query, source abbreviation, terminology version, and retrieval date.
+Online results remain candidates until human review and target-site reconciliation.
+If online credentials or network access are unavailable, write the local LOINC
+Athena SQL and leave it unexecuted as specified below.
+
 ## Establish the laboratory concept
 
 Ask only questions whose answers change code selection:
@@ -59,9 +82,10 @@ Use the following evidence order and retain provenance for every candidate:
 1. **Target-site data:** inspect or query `discovery__code_sources` for
    `table_name IN ('observation', 'diagnosticreport')`. Profile `column_name` before
    filtering. Capture LOINC and local systems actually present.
-2. **Official LOINC:** verify term identity, status, six-axis fit, and version with
-   SearchLOINC or the official FHIR terminology service. Use `$lookup`, `$expand`,
-   and `$validate-code` as appropriate. Never expose LOINC credentials.
+2. **Online terminology:** use UTS with `sabs=LNC` when `UMLS_API_KEY` is present for
+   fast source-code discovery. Verify term identity, status, six-axis fit, and version
+   with SearchLOINC or the official FHIR terminology service when LOINC credentials
+   are available. Use `$lookup`, `$expand`, and `$validate-code` as appropriate.
 3. **LOINC Groups and panels:** use Groups to find related term codes and panels to
    understand order/result structure. Validate membership and clinical scope.
 4. **Local LOINC Athena study:** write, but never run, SELECT-only SQL against the
