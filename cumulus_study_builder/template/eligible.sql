@@ -1,7 +1,7 @@
 -- eligible. event-level eligibility and outcome risk-set membership.
 --
 -- Grain. one row per therapy-line episode from {{ prefix }}__eligible_rx_date,
--- joined per subject to the anchor date ({{ prefix }}__eligible_dx) and left to
+-- joined per subject to the anchor date ({{ prefix }}__eligible_dx_date) and left to
 -- the first outcome ({{ prefix }}__eligible_outcome). Risk-set flags are
 -- evaluated at each line's anchor. A line at or after the first outcome stays in
 -- the history but is not outcome-free. This is the CDS / cohort-selection surface.
@@ -40,6 +40,6 @@ SELECT  rx.subject_ref,
             ELSE 'eligible_outcome_risk_set'
         END                                         AS event_disposition
 FROM    {{ prefix }}__eligible_rx_date AS rx
-JOIN    {{ prefix }}__eligible_dx      AS dx ON dx.subject_ref = rx.subject_ref
+JOIN    {{ prefix }}__eligible_dx_date AS dx ON dx.subject_ref = rx.subject_ref
 LEFT JOIN {{ prefix }}__eligible_outcome AS o ON o.subject_ref = rx.subject_ref
 ;

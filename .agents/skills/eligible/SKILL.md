@@ -46,7 +46,7 @@ and regenerate. The `example_eligible_*` views ARE hand-authored (the guided lay
 
 | # | Table | Grain | What it establishes |
 |---|---|---|---|
-| 1 | `eligible_dx` | subject | **Best case/index (casedef match) date** via an evidence ladder. |
+| 1 | `eligible_dx_date` | subject | **Best case/index (casedef match) date** via an evidence ladder. |
 | 2 | `eligible_rx_date` | subject × class | Treatment-class first-exposure dates and **therapy lines**. |
 | 3 | `eligible_rx_date_evidence` | subject × class × ref | Normalized evidence references (provenance). |
 | 4 | `eligible_rx_date_prior_class` | subject × class | Distinct classes started **before** each line (step-up / top-down). |
@@ -56,7 +56,7 @@ and regenerate. The `example_eligible_*` views ARE hand-authored (the guided lay
 
 ## The best casedef match date (the ladder) — start here
 
-The anchor of the whole stage is `eligible_dx.casedef_date_best`: the date the
+The anchor of the whole stage is `eligible_dx_date.casedef_date_best`: the date the
 case is *established*. This is study-specific and is the first thing to get right:
 
 - **IBD** → the diagnosis-established date.
@@ -128,7 +128,7 @@ Each template is a generic scaffold keyed off the built study. The reference wal
 each one, but the usual edits are: repoint `eligible_rx_date` at your rx-class
 study-variables (names starting `rx`), repoint `eligible_outcome`'s `WHERE` at your
 outcome valueset (default is procedure-aspect events, e.g. a qualifying surgery), add an
-LLM rung to `eligible_dx` if you run chart-review, and refine `rx_is_line_forming`
+LLM rung to `eligible_dx_date` if you run chart-review, and refine `rx_is_line_forming`
 (e.g. exclude bridging steroids). Edit `template/eligible_*.sql`, then regenerate.
 
 ## Rules

@@ -28,7 +28,7 @@ from cumulus_study_builder.tools import manifest, template, filetool, tablespace
 
 # Rendered in dependency order (build:serial). each table reads the prior ones.
 ELIGIBLE_FAMILY = [
-    'eligible_dx',                 # best case/index (casedef match) date per subject
+    'eligible_dx_date',            # best case/index (casedef match) date per subject
     'eligible_rx_date',            # treatment-class first-exposure dates + therapy lines
     'eligible_rx_date_evidence',   # normalized evidence refs per class
     'eligible_rx_date_prior_class',# prior classes before each line

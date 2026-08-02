@@ -28,7 +28,7 @@ Upstream dependencies (built by earlier stages, safe to read):
 dated/valued columns), and optionally `example__llm_timeline` / `example__llm_*_wide`
 (chart-review outputs) when the chart-review stage runs.
 
-## The best-date resolution ladder (`eligible_dx`)
+## The best-date resolution ladder (`eligible_dx_date`)
 
 `casedef_date_best` is the anchor. The pattern is a **priority ladder**: collect a
 candidate date from each evidence source, then take the first non-null by priority
@@ -93,7 +93,7 @@ criteria.
 
 ## First outcome (`eligible_outcome`)
 
-Grain = one row per subject in `eligible_dx` (outcome or not). Earliest qualifying
+Grain = one row per subject in `eligible_dx_date` (outcome or not). Earliest qualifying
 event wins; keep a deterministic source priority for same-date ties (IBD surgery:
 `Procedure.performed` > LLM date > procedure-linked encounter > billing code =
 upper bound). Default template selects procedure-aspect events
@@ -187,7 +187,7 @@ covariates, one row per unit — is the SQL CTAS input handed to Python for PSM/
 
 | Template | Typical study edit |
 |---|---|
-| `eligible_dx` | Add an LLM rung above the FHIR rung if chart-review runs. adjust the tier / subtype tie-break to your casedef. for a procedure-defined study the "peri" encounter already IS the procedure date. |
+| `eligible_dx_date` | Add an LLM rung above the FHIR rung if chart-review runs. adjust the tier / subtype tie-break to your casedef. for a procedure-defined study the "peri" encounter already IS the procedure date. |
 | `eligible_rx_date` | Point at your rx-class study-variables. add the evidence-source priority and failure-driven episode engine. set `rx_is_line_forming = FALSE` for bridge/rescue classes. |
 | `eligible_rx_date_evidence` | Usually unchanged. extend if you add non-union evidence (dispense, LLM). |
 | `eligible_rx_date_prior_class` | Usually unchanged. it derives from `eligible_rx_date`. |

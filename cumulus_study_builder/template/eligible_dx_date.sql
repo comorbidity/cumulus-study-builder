@@ -1,4 +1,4 @@
--- eligible_dx. best case/index (anchor) date per subject.
+-- eligible_dx_date. best case/index (anchor) date per subject.
 --
 -- This is the generic "best evidence for the casedef match date". For IBD the
 -- anchor is the diagnosis-established date. for a procedure-defined study
@@ -7,7 +7,7 @@
 -- {{ prefix }}__cohort_casedef, restricted to the strongest tier and broken by
 -- subtype specificity. Adapt the ladder to your study (add an LLM rung, change
 -- the tier rule) in the study-builder. see the eligible skill.
-CREATE  TABLE   {{ prefix }}__eligible_dx AS
+CREATE  TABLE   {{ prefix }}__eligible_dx_date AS
 WITH
 -- FHIR rung. the first case-defining encounter for each subject.
 fhir_anchor AS (

@@ -1,6 +1,6 @@
 -- eligible_outcome. the subject's FIRST qualifying outcome event (time-to-event).
 --
--- Grain. one row per subject in {{ prefix }}__eligible_dx (every eligible subject
+-- Grain. one row per subject in {{ prefix }}__eligible_dx_date (every eligible subject
 -- appears, outcome or not). The default outcome is any procedure-aspect event
 -- (variable LIKE 'proc%'), matching the IBD "first qualifying surgery" pattern.
 -- Repoint WHERE to your outcome valueset (an outcome study-variable, or a dx/proc
@@ -31,6 +31,6 @@ SELECT  dx.subject_ref,
         o.outcome_type                  AS outcome_type_first,
         'variable_union'                AS outcome_source_first,
         o.outcome_ref                   AS outcome_evidence_ref_first
-FROM    {{ prefix }}__eligible_dx AS dx
+FROM    {{ prefix }}__eligible_dx_date AS dx
 LEFT JOIN first_outcome AS o ON o.subject_ref = dx.subject_ref
 ;

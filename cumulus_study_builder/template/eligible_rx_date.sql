@@ -29,7 +29,7 @@ rx_first AS (
     GROUP BY subject_ref, rx_class
 ),
 dx AS (
-    SELECT subject_ref, casedef_date_best FROM {{ prefix }}__eligible_dx
+    SELECT subject_ref, casedef_date_best FROM {{ prefix }}__eligible_dx_date
 )
 SELECT  f.subject_ref,
         f.rx_class,
