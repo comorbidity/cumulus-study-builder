@@ -1,61 +1,52 @@
+"""
+Iron studies panel extraction.
+
+SEE: https://loinc.org/75689-0
+
+Generic iron-studies example (the analytes typically ordered together to evaluate iron
+status). One `LabBaseMention` subclass per analyte, aggregated into a panel annotation.
+Edit the analyte set and docstrings for your study.
+"""
 from pydantic import BaseModel
-from cumulus_study_builder.llm.models.lab_base import LabValueMention
+from cumulus_study_builder.llm.models.lab_base import LabBaseMention
 
-# ---------------------------------------------------------------------------
-# Iron studies
-# ---------------------------------------------------------------------------
-class IronMention(LabValueMention):
-    """
-    Serum iron. Circulating iron bound largely to transferrin. Interpreted
-    alongside ferritin, transferrin, TIBC, and transferrin saturation for
-    anemia phenotyping in IBD. Typically reported in ug/dL or umol/L. Capture
-    the reported value and unit verbatim; do not infer iron deficiency from the
-    value alone.
-    """
+
+class IronMention(LabBaseMention):
+    """Serum iron. Typically reported in ug/dL or umol/L. Capture the reported value
+    and unit verbatim; do not infer iron status from the value alone."""
     pass
 
-class TIBCMention(LabValueMention):
-    """
-    Total iron-binding capacity. Typically reported in ug/dL or umol/L.
-    """
+
+class TIBCMention(LabBaseMention):
+    """Total iron-binding capacity (TIBC). Typically reported in ug/dL or umol/L."""
     pass
 
-class FerritinMention(LabValueMention):
-    """
-    Serum ferritin. Iron storage protein and positive acute-phase reactant;
-    interpretation in IBD requires co-assessment with CRP. Typically
-    reported in ng/mL or ug/L.
-    """
+
+class FerritinMention(LabBaseMention):
+    """Serum ferritin. An iron-storage protein and a positive acute-phase reactant.
+    Typically reported in ng/mL or ug/L."""
     pass
 
-class TransferrinMention(LabValueMention):
-    """
-    Serum transferrin. Iron transport protein. Typically reported in
-    mg/dL or g/L.
-    """
+
+class TransferrinMention(LabBaseMention):
+    """Serum transferrin (iron transport protein). Typically reported in mg/dL or g/L."""
     pass
 
-class TransferrinSaturationMention(LabValueMention):
-    """
-    Transferrin saturation (TSAT), computed as serum iron divided by
-    TIBC. Typically reported as a percentage. Low TSAT is a sensitive
-    marker of iron deficiency in IBD even when ferritin is elevated by
-    inflammation.
-    """
+
+class TransferrinSaturationMention(LabBaseMention):
+    """Transferrin saturation (TSAT), computed as serum iron divided by TIBC. Typically
+    reported as a percentage."""
     pass
+
 
 # ---------------------------------------------------------------------------
 # Annotation
 # ---------------------------------------------------------------------------
-class IbdIronLabPanelAnnotation(BaseModel):
+class IronStudiesAnnotation(BaseModel):
     """
-    Iron studies panel for anemia evaluation in pediatric IBD.
-    https://loinc.org/75689-0
+    Iron studies panel. One documented result per analyte.
 
-    * tibc: Total iron-binding capacity; elevated in iron deficiency, suppressed in inflammation.
-    * ferritin: Acute-phase reactant; interpret cautiously as iron store marker in active disease.
-    * transferrin: Iron transport protein; inversely tracks iron status but depressed by inflammation.
-    * transferrin_saturation: Ferritin/TIBC ratio; best functional indicator of iron-deficient erythropoiesis.
+    Generic example — replace or trim the analytes to those your study needs.
     """
     iron: IronMention
     tibc: TIBCMention

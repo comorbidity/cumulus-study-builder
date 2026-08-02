@@ -1,9 +1,21 @@
+"""
+Disease diagnosis extraction (generic example).
+
+Extracts, from a single clinical note, the patient's disease subtype, age at first
+diagnosis, first-diagnosis date, a confirmatory ("gold") diagnostic date, and current
+activity/severity. A research user overrides `DiseaseType` (and the subtype and
+severity vocabularies) with the categories their study defines.
+
+Do not extract family history, negated disease, rule-out, or
+suspected/probable/working diagnoses at the extraction layer.
+"""
 from enum import StrEnum
 from pydantic import BaseModel, Field
 from cumulus_study_builder.llm.models.base import SpanAugmentedMention, DatePrecision
 
+
 ###############################################################################
-# Disease SubType
+# Disease subtype  (PLACEHOLDER — replace TYPE_* with your study's subtypes)
 ###############################################################################
 class DiseaseType(StrEnum):
     TYPE_I = "TYPE_I"
@@ -11,20 +23,18 @@ class DiseaseType(StrEnum):
     TYPE_IIB = "TYPE_IIB"
     NONE_OF_THE_ABOVE = "NONE_OF_THE_ABOVE"
 
+
 class DiseaseTypeMention(SpanAugmentedMention):
     """
-    Patient's documented Disease subtype.
+    Patient's documented disease subtype.
 
-    If multiple IBD subtypes appear, classify based on the most recently affirmed IBD diagnosis in this note.
-
-    Captures explicit diagnostic statements only; do not infer subtype from
-    symptoms, medication use, imaging findings, endoscopy findings, or pathology
-    findings unless the note states the diagnosis or subtype.
-
-    Do not extract negated IBD, rule-out IBD, suspected/probable/working-diagnosis IBD, or non-IBD colitis.
-    Do not extract a family history of IBD.
+    If multiple subtypes appear, classify by the most recently affirmed diagnosis in
+    this note. Capture explicit diagnostic statements only; do not infer subtype from
+    symptoms, medications, imaging, or pathology unless the note states the diagnosis
+    or subtype. Do not extract negated, rule-out, suspected/probable/working, or
+    family-history diagnoses.
     """
-    ibd_type: DiseaseType = Field(
+    disease_type: DiseaseType = Field(
         default=DiseaseType.NONE_OF_THE_ABOVE,
         description=(
             "Documented disease subtype using only evidence from this note. "
@@ -32,102 +42,114 @@ class DiseaseTypeMention(SpanAugmentedMention):
             "TYPE_I: concise definition for disease subtype I; "
             "TYPE_IIA: concise definition for disease subtype IIA; "
             "TYPE_IIB: concise definition for disease subtype IIB; "
-            "NONE_OF_THE_ABOVE: no patient-level disease diagnosis is documented in this note. "),
+            "NONE_OF_THE_ABOVE: no patient-level disease diagnosis is documented in this note."
+        ),
     )
 
+
 ###############################################################################
-# Age of IBD diagnosis
+# Age at diagnosis
 ###############################################################################
 class AgeAtDiagnosisMention(SpanAugmentedMention):
     """
-    Patient's age at the time of their initial disease diagnosis, in completed months.
+    Patient's age at their initial disease diagnosis, in completed months.
 
-    Do not derive age from documented diagnosis dates combined with date of birth.
-
-    Do not extract IBD family history, disease negated, IBD rule-out, or IBD suspected/probable/working-diagnosis.
+    Extract only when the note explicitly states the age at diagnosis. Do not derive
+    age from a diagnosis date combined with a date of birth. Do not extract from
+    family-history, negated, rule-out, or suspected diagnoses.
     """
     age_at_diagnosis_months: int | None = Field(
         default=None,
         ge=0,
-        le=300, #18 years old + 7 years followup conservative ceiling for pediatric hospital
-        description=("Patient's age in completed months at the time of their first IBD diagnosis. "
-                     "Extract only when the note explicitly states the patient's age at IBD diagnosis "
-                     "(e.g., 'diagnosed at 18 months', 'IBD diagnosed at age 4'). "
-                     "For ages stated in years, use the floor in months (age 4 -> 48).")
+        le=1500,  # generous ceiling in months; tighten for your population
+        description=(
+            "Patient's age in completed months at first diagnosis. Extract only when the "
+            "note explicitly states the age at diagnosis (e.g. 'diagnosed at 18 months', "
+            "'diagnosed at age 4'). For ages stated in years, use the floor in months "
+            "(age 4 -> 48)."
+        ),
     )
 
+
 ###############################################################################
-# First IBD Diagnosis Date - Any Evidence Source
+# First diagnosis date — any evidence source
 ###############################################################################
 class DiagnosisDateMention(SpanAugmentedMention):
     """
-    Date on which the patient was first diagnosed with DiseaseType (any subtype).
+    Date the patient was first diagnosed with the disease (any subtype, any source).
 
-    If multiple diagnoses are described (e.g., original diagnosis and later reclassification), use the earliest.
-    Extract documented IBD diagnoses in any evidence source, including endoscopic procedures.
-
-    Do not extract family history, negated, rule-out, or suspected/probable/working-diagnosis.
+    If multiple diagnoses are described (e.g. original diagnosis and later
+    reclassification), use the earliest. Do not extract family-history, negated,
+    rule-out, or suspected diagnoses.
     """
     diagnosis_date: str | None = Field(
         None,
-        description=("Earliest date on which disease is affirmatively documented as a diagnosis, "
-                     "in ISO YYYY-MM-DD format (e.g. 2021-01-15). Always emit a full YYYY-MM-DD value. "
-                     "If only month or year precision is supported by the text, "
-                     "use the first possible date consistent with it (January 2021 -> 2021-01-01; "
-                     "2021 -> 2021-01-01) and record the actual precision in diagnosis_date_precision.")
+        description=(
+            "Earliest date the disease is affirmatively documented as a diagnosis, in ISO "
+            "YYYY-MM-DD (e.g. 2021-01-15). Always emit a full YYYY-MM-DD. If only month or "
+            "year precision is supported, use the first date consistent with it "
+            "(January 2021 -> 2021-01-01; 2021 -> 2021-01-01) and record the precision in "
+            "diagnosis_date_precision."
+        ),
     )
 
     diagnosis_date_precision: DatePrecision | None = Field(
         None,
-        description=("Precision actually supported by the source text for ibd_diagnosis_date. "
-                     "DAY: day, month, and year were explicitly stated; "
-                     "MONTH: month and year were explicitly stated; "
-                     "YEAR: only year was explicitly stated; "
-                     "Use null when ibd_diagnosis_date is null.")
+        description=(
+            "Precision supported by the source text for diagnosis_date. "
+            "DAY: day, month, and year were explicitly stated; "
+            "MONTH: month and year were explicitly stated; "
+            "YEAR: only year was explicitly stated; "
+            "null when diagnosis_date is null."
+        ),
     )
 
+
 ###############################################################################
-# Example: IBD Diagnosis Date *CONFIRMED ON ENDOSCOPY*
+# Confirmatory ("gold") diagnostic date
 ###############################################################################
 class DiagnosisDateGoldMention(SpanAugmentedMention):
     """
-    Date of the endoscopic procedure that first established the patient's IBD diagnosis.
+    Date of the confirmatory ("gold standard") diagnostic procedure or study that first
+    established the diagnosis — for example an endoscopy, biopsy, or imaging study,
+    depending on the disease.
 
-    If multiple endoscopic procedures are described, use the earliest one that established the IBD diagnosis.
-    Prefer the procedure date over the pathology confirmation date.
-
-    Do not extract from surveillance endoscopies or endoscopies that did not establish the IBD diagnosis.
-
-    Do not extract IBD family history, IBD negated, IBD rule-out, or IBD suspected/probable/working-diagnosis.
+    If multiple confirmatory studies are described, use the earliest one that
+    established the diagnosis, and prefer the procedure date over a later pathology
+    confirmation date. Do not extract from surveillance procedures that did not
+    establish the diagnosis, nor from family-history, negated, rule-out, or suspected
+    diagnoses.
     """
     diagnosis_date_gold: str | None = Field(
         None,
-        description=("Date of the endoscopic procedure that first established the IBD diagnosis, "
-                     "in ISO YYYY-MM-DD format (e.g. 2021-01-15). Always emit a full YYYY-MM-DD value. "
-                     "If only month or year precision is supported by the text, "
-                     "use the first possible date consistent with it (January 2021 -> 2021-01-01; "
-                     "2021 -> 2021-01-01) and record the actual precision in ibd_diagnosis_date_endoscopy_precision.")
+        description=(
+            "Date of the confirmatory diagnostic procedure or study that first established "
+            "the diagnosis, in ISO YYYY-MM-DD (e.g. 2021-01-15). Always emit a full "
+            "YYYY-MM-DD. If only month or year precision is supported, use the first date "
+            "consistent with it (January 2021 -> 2021-01-01; 2021 -> 2021-01-01) and record "
+            "the precision in diagnosis_date_gold_precision."
+        ),
     )
 
     diagnosis_date_gold_precision: DatePrecision | None = Field(
         None,
-        description=("Precision actually supported by the source text for ibd_diagnosis_date_endoscopy. "
-                     "DAY: day, month, and year were explicitly stated; "
-                     "MONTH: month and year were explicitly stated; "
-                     "YEAR: only year was explicitly stated; "
-                     "Use Null when ibd_diagnosis_date_endoscopy is null.")
+        description=(
+            "Precision supported by the source text for diagnosis_date_gold. "
+            "DAY: day, month, and year were explicitly stated; "
+            "MONTH: month and year were explicitly stated; "
+            "YEAR: only year was explicitly stated; "
+            "null when diagnosis_date_gold is null."
+        ),
     )
 
+
 ###############################################################################
-# Example: IBD Severity
+# Disease severity / activity
 ###############################################################################
 class DiseaseSeverity(StrEnum):
     """
-    Current documented disease severity.
-
-    These values intentionally include common clinician range phrases because
-    LLM extraction quality is usually better when enum options closely match
-    the language used in clinical notes.
+    Current documented disease severity. Range phrases are intentionally included
+    because extraction is usually better when enum options match note language.
     """
     MILD = "MILD"
     MILD_TO_MODERATE = "MILD_TO_MODERATE"
@@ -136,86 +158,64 @@ class DiseaseSeverity(StrEnum):
     SEVERE = "SEVERE"
     NONE_OF_THE_ABOVE = "NONE_OF_THE_ABOVE"
 
-###############################################################################
-# Example: IBD Activity
-###############################################################################
+
 class DiseaseActivity(StrEnum):
-    """
-    Current documented IBD disease activity.
-
-    Use ACTIVE when the note documents current active disease, flare,
-    ongoing inflammation, or active symptoms attributable to IBD.
-
-    Use REMISSION when the note documents remission, quiescent disease,
-    inactive disease, no active disease, or asymptomatic/inactive IBD as
-    the current state.
-    """
+    """Current documented disease activity."""
     REMISSION = "REMISSION"
     ACTIVE = "ACTIVE"
     NONE_OF_THE_ABOVE = "NONE_OF_THE_ABOVE"
 
+
 class DiseaseActivityAndSeverityMention(SpanAugmentedMention):
     """
-    Current documented IBD disease activity and severity.
+    Current documented disease activity and severity.
 
     Examples:
-    * "IBD in remission" -> activity=REMISSION, severity=NONE_OF_THE_ABOVE
-    * "active Crohn's disease" -> activity=ACTIVE, severity=NONE_OF_THE_ABOVE
+    * "in remission" -> activity=REMISSION, severity=NONE_OF_THE_ABOVE
+    * "active disease" -> activity=ACTIVE, severity=NONE_OF_THE_ABOVE
     * "mild disease" -> activity=ACTIVE, severity=MILD
-    * "mild to moderate disease" -> activity=ACTIVE, severity=MILD_TO_MODERATE
-    * "moderate disease" -> activity=ACTIVE, severity=MODERATE
     * "moderate to severe disease" -> activity=ACTIVE, severity=MODERATE_TO_SEVERE
-    * "severe disease" -> activity=ACTIVE, severity=SEVERE
 
-    If a severity is negated (e.g., "no severe disease"), do not assign that severity.
-
-    If multiple severities appear for different anatomic segments
-    (e.g., "severe proctitis with mild left-sided involvement"), use the highest severity.
-
-    Do not infer severity from medication intensity, and do not use historical severity if the patient is now in remission.
-
-    Do not extract family history of IBD, negated IBD, rule-out IBD, or suspected/probable/working-diagnosis IBD.
+    If a severity is negated (e.g. "no severe disease"), do not assign it. If multiple
+    severities appear for different sites, use the highest. Do not infer severity from
+    medication intensity, and do not use a historical severity if the patient is now in
+    remission. Do not extract family-history, negated, rule-out, or suspected disease.
     """
     disease_activity: DiseaseActivity = Field(
         default=DiseaseActivity.NONE_OF_THE_ABOVE,
         description=(
-            "Current documented IBD disease activity. "
-            "ACTIVE: current active disease, active inflammation, active flare, "
-            "currently flaring, or active IBD symptoms are documented and attributed to IBD; "
-            "REMISSION: remission, quiescent disease, inactive disease, no active disease, "
-            "or asymptomatic/inactive IBD is documented as the current state. "
-            "NONE_OF_THE_ABOVE: current IBD activity is not documented."
+            "Current documented disease activity. "
+            "ACTIVE: current active disease, active inflammation, active flare, or active "
+            "symptoms documented and attributed to the disease; "
+            "REMISSION: remission, quiescent, inactive, or asymptomatic disease documented "
+            "as the current state; "
+            "NONE_OF_THE_ABOVE: current activity is not documented."
         ),
     )
 
     disease_severity: DiseaseSeverity = Field(
         default=DiseaseSeverity.NONE_OF_THE_ABOVE,
         description=(
-            "Current documented IBD disease severity. "
-            "Use the enum value that best matches the clinician's wording. "
-            "MILD: phrases such as 'mild disease' or 'mild activity'. "
-            "MILD_TO_MODERATE: phrases such as 'mild to moderate disease'. "
-            "MODERATE: phrases such as 'moderate disease' or 'moderate activity'. "
-            "MODERATE_TO_SEVERE: phrases such as 'moderate to severe disease'. "
-            "SEVERE: phrases such as 'severe disease' or 'severe activity'. "
+            "Current documented disease severity. Use the value that best matches the "
+            "clinician's wording. "
+            "MILD / MILD_TO_MODERATE / MODERATE / MODERATE_TO_SEVERE / SEVERE for those "
+            "phrases; "
             "NONE_OF_THE_ABOVE: severity is not documented, or only activity is documented "
-            "without a severity grade, such as 'active disease' or 'active flare'."
+            "without a severity grade."
         ),
     )
 
+
 ###############################################################################
-# Aggregated Annotation and Mention Classes
-#
-# This is the top-level structure for the pydantic models used in IBD diagnosis.
+# Aggregated annotation
 ###############################################################################
 class DiseaseDiagnosisAnnotation(BaseModel):
     """
-    Patient-level IBD diagnosis annotations extracted from a single clinical note.
+    Patient-level disease-diagnosis annotations from a single clinical note: subtype,
+    age at first diagnosis, first-diagnosis date, confirmatory diagnostic date, and
+    current activity/severity.
 
-    Captures the patient's IBD subtype, age at first diagnosis, first diagnosis date,
-    diagnostic endoscopy date when documented, and current disease activity/severity.
-
-    Do not extract family history of IBD, negated IBD, rule-out IBD, or suspected/probable/working-diagnosis IBD.
+    Do not extract family-history, negated, rule-out, or suspected diagnoses.
     """
     disease_type: DiseaseTypeMention
     age_at_diagnosis: AgeAtDiagnosisMention

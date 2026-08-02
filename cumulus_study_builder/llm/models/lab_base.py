@@ -1,13 +1,18 @@
-# RECONSTRUCTED (approximate) generic lab-panel base for chart review.
-# Replace with the source `lab_base.py` on device sync if you want the exact
-# base classes used by the source study's lab-panel annotations.
-#
-# Pattern: a single lab measurement mention (value + unit + interpretation),
-# reused across panel-specific annotation models. Extend per your objective;
-# keep enums parsimonious and decision-relevant.
+"""
+Generic lab-panel base for chart review.
+
+Pattern: a single laboratory measurement mention (numeric value + unit +
+interpretation + result date). Subclass `LabBaseMention` once per analyte to build
+a panel (see lab_panel_cbc.py / lab_panel_cmp.py / lab_panel_iron.py) — the subclass
+name and docstring identify the analyte, and every analyte inherits the fields below.
+
+Keep enums parsimonious and decision-relevant; a research user overrides the analytes
+and interpretation to fit their study.
+"""
 from enum import StrEnum
 from pydantic import BaseModel, Field
 from cumulus_study_builder.llm.models.base import SpanAugmentedMention, DatePrecision
+
 
 class LabInterpretation(StrEnum):
     LOW = "LOW"
@@ -15,48 +20,61 @@ class LabInterpretation(StrEnum):
     HIGH = "HIGH"
     NONE_OF_THE_ABOVE = "NONE_OF_THE_ABOVE"
 
-class LabValueMention(SpanAugmentedMention):
+
+class LabBaseMention(SpanAugmentedMention):
     """
     A single documented laboratory result for one analyte.
 
-    Capture only patient-specific, documented results. Do not infer values, and
-    do not extract reference ranges or family-history values.
+    Shared base for lab-panel extraction. Subclass once per analyte; the subclass name
+    and docstring name the analyte, and each analyte inherits value_numeric, unit,
+    interpretation, and result date from here.
+
+    Capture only patient-specific, documented results. Do not infer values, and do not
+    extract reference ranges or family-history values.
     """
-    value: float | None = Field(
+    value_numeric: float | None = Field(
         None,
-        description="Numeric result value as documented, or null if not stated."
+        description="Numeric result value exactly as documented, or null if not stated."
     )
     unit: str | None = Field(
         None,
-        description="Units as documented (e.g. mg/dL), or null."
+        description="Units exactly as documented (e.g. mg/dL, g/dL, x10^3/uL), or null."
     )
     interpretation: LabInterpretation = Field(
         default=LabInterpretation.NONE_OF_THE_ABOVE,
         description=(
-            "Documented interpretation. LOW / NORMAL / HIGH when the note states "
-            "or clearly implies it; NONE_OF_THE_ABOVE when not documented."
+            "Documented interpretation of the result. "
+            "LOW / NORMAL / HIGH when the note states or clearly flags it; "
+            "NONE_OF_THE_ABOVE when no interpretation is documented."
         ),
     )
     result_date: str | None = Field(
         None,
         description=(
-            "Result date in ISO YYYY-MM-DD, first-of-period when coarse; record the "
-            "precision in result_date_precision. Null when no date is stated."
+            "Result date in ISO YYYY-MM-DD. Always emit a full date; when only month or "
+            "year precision is supported, use the first date consistent with it "
+            "(January 2021 -> 2021-01-01) and record the precision in result_date_precision. "
+            "Null when no date is stated."
         ),
     )
     result_date_precision: DatePrecision | None = Field(
         None,
-        description="Precision supported for result_date. DAY/MONTH/YEAR; null when result_date is null."
+        description=(
+            "Precision supported by the text for result_date. DAY / MONTH / YEAR; "
+            "null when result_date is null."
+        ),
     )
 
 
 class ExampleLabPanelAnnotation(BaseModel):
     """
-    EXAMPLE lab-panel annotation. Rename per your panel and list the analytes
-    your objective actually needs (each as its own LabValueMention field or a
-    list[LabValueMention]).
+    Minimal example lab panel — a flat list of results.
+
+    The simplest panel shape. For the named-analyte pattern (one field per analyte,
+    each an analyte-specific subclass), see lab_panel_cbc.py. Replace this with the
+    analytes your objective needs.
     """
-    lab_values: list[LabValueMention] = Field(
+    lab_values: list[LabBaseMention] = Field(
         default_factory=list,
-        description="Documented lab results relevant to this panel."
+        description="Documented laboratory results relevant to this panel."
     )
