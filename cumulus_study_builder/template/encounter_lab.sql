@@ -1,4 +1,4 @@
-CREATE  TABLE   {{ prefix }}__cohort_study_population_lab AS
+CREATE  TABLE   {{ prefix }}__encounter_lab AS
 WITH
 has_encounter AS (
     SELECT  DISTINCT
@@ -7,10 +7,10 @@ has_encounter AS (
             enc_period_ordinal,
             enc_period_start_day,
             enc_period_end_day_filled
-    FROM    {{ prefix }}__cohort_study_population
+    FROM    {{ prefix }}__encounter
     WHERE   encounter_ref IS NOT NULL
 ),
--- Priority A: encounter_ref maps to retained study_population encounter
+-- Priority A: encounter_ref maps to a retained encounter row
 by_encounter AS (
     SELECT  lab.lab_observation_code,
             lab.lab_observation_system,
@@ -43,7 +43,7 @@ by_encounter AS (
             lab.encounter_ref AS encounter_ref_link,
             'encounter_ref'   AS encounter_ref_link_col
 
-    FROM    {{ prefix }}__cohort_study_population_lab_base AS lab
+    FROM    {{ prefix }}__encounter_lab_base AS lab
     JOIN    has_encounter
     ON      has_encounter.encounter_ref = lab.encounter_ref
     AND     has_encounter.subject_ref   = lab.subject_ref
@@ -51,51 +51,51 @@ by_encounter AS (
 ),
 
 -- Priority B candidates: effectivedatetime present AND the lab is NOT on retained
--- study_population encounter. obs_has_encounter = 0 is the anti-join sentinel set in obs_base
+-- encounter row. obs_has_encounter = 0 is the anti-join sentinel set in obs_base
 date_candidates AS (
     SELECT  DISTINCT
             observation_ref,
             subject_ref,
             lab_effectivedate_day
-    FROM    {{ prefix }}__cohort_study_population_lab_base
+    FROM    {{ prefix }}__encounter_lab_base
     WHERE   obs_has_encounter = 0
     AND     lab_effectivedate_day   IS NOT  NULL
 ),
 date_candidates_ranked AS (
     SELECT  lab.observation_ref,
-            sp.encounter_ref AS encounter_ref_link,
+            enc.encounter_ref AS encounter_ref_link,
 
             ROW_NUMBER() OVER (
                 PARTITION BY lab.observation_ref
                 ORDER BY
                     -- Tie-Break #1: encounter starts on the date-mapped day
                     CASE
-                        WHEN lab.lab_effectivedate_day = sp.enc_period_start_day
+                        WHEN lab.lab_effectivedate_day = enc.enc_period_start_day
                         THEN 0 ELSE 1
                     END,
                     -- Tie-Break #2: narrowest window
                     DATE_DIFF(
                         'day',
-                        sp.enc_period_start_day,
-                        sp.enc_period_end_day_filled
+                        enc.enc_period_start_day,
+                        enc.enc_period_end_day_filled
                     ) ASC,
                     -- Tie-Break #3: start closest to the date-mapped day
                     ABS(
                         DATE_DIFF(
                             'day',
-                            sp.enc_period_start_day,
+                            enc.enc_period_start_day,
                             lab.lab_effectivedate_day
                         )
                     ) ASC,
                     -- Tie-Break #4: encounter ordinal
-                    sp.enc_period_ordinal ASC,
+                    enc.enc_period_ordinal ASC,
                     -- Tie-Break #5: encounter_ref
-                    sp.encounter_ref ASC
+                    enc.encounter_ref ASC
             ) AS lab_link_rank
     FROM    date_candidates AS lab
-    JOIN    has_encounter AS sp
-    ON      sp.subject_ref = lab.subject_ref
-    AND     lab.lab_effectivedate_day BETWEEN sp.enc_period_start_day AND sp.enc_period_end_day_filled
+    JOIN    has_encounter AS enc
+    ON      enc.subject_ref = lab.subject_ref
+    AND     lab.lab_effectivedate_day BETWEEN enc.enc_period_start_day AND enc.enc_period_end_day_filled
 ),
 date_candidates_links AS (
     SELECT
@@ -135,7 +135,7 @@ by_effectivedate AS (
             link.encounter_ref_link AS encounter_ref_link,
             'effectivedatetime'     AS encounter_ref_link_col
     FROM    date_candidates_links   AS link
-    JOIN    {{ prefix }}__cohort_study_population_lab_base AS lab
+    JOIN    {{ prefix }}__encounter_lab_base AS lab
     ON      lab.observation_ref = link.observation_ref
     WHERE   lab.lab_effectivedate_day   IS NOT  NULL
 ),

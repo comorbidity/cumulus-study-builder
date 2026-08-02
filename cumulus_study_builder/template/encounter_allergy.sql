@@ -1,6 +1,6 @@
-CREATE  TABLE   {{ prefix }}__cohort_study_population_allergy AS
+CREATE  TABLE   {{ prefix }}__encounter_allergy AS
 WITH
--- Priority A: encounter_ref maps to retained study_population encounter
+-- Priority A: encounter_ref maps to a retained encounter row
 by_encounter AS (
     SELECT
             allergy.clinicalstatus_code             AS allergy_clinical_status,
@@ -22,69 +22,69 @@ by_encounter AS (
             allergy.reaction_manifestation_display  AS allergy_manifestation_display,
             allergy.reaction_severity               AS allergy_severity,
             allergy.allergyintolerance_ref          AS allergyintolerance_ref,
-            sp.subject_ref                          AS subject_ref,
-            sp.encounter_ref                        AS encounter_ref,
-            sp.encounter_ref                        AS encounter_ref_link,
+            enc.subject_ref                          AS subject_ref,
+            enc.encounter_ref                        AS encounter_ref,
+            enc.encounter_ref                        AS encounter_ref_link,
             'encounter_ref'                         AS encounter_ref_link_col
-    FROM    {{ prefix }}__cohort_study_population   AS sp
+    FROM    {{ prefix }}__encounter   AS enc
     JOIN    core__allergyintolerance                AS allergy
-    ON      sp.encounter_ref = allergy.encounter_ref
-    AND     sp.subject_ref   = allergy.patient_ref
+    ON      enc.encounter_ref = allergy.encounter_ref
+    AND     enc.subject_ref   = allergy.patient_ref
     WHERE   allergy.encounter_ref IS NOT NULL
 ),
 
 -- Priority B candidates: recordeddate present AND the allergy's encounter_ref is
--- NOT retained study_population encounter. The anti-join against
--- cohort_study_population covers BOTH a true-null encounter_ref (never matches) and
--- an encounter_ref pointing at an encounter dropped by the population filters.
+-- NOT a retained encounter row. The anti-join against
+-- encounter covers BOTH a true-null encounter_ref (never matches) and
+-- an encounter_ref pointing at an encounter dropped by the study-encounter filters.
 -- NOTE: this anti-join depends on subject_ref being formatted consistently between
--- core__allergyintolerance.patient_ref and cohort_study_population.subject_ref.
+-- core__allergyintolerance.patient_ref and encounter.subject_ref.
 date_candidates AS (
     SELECT  DISTINCT
             allergy.allergyintolerance_ref  AS allergyintolerance_ref,
             allergy.patient_ref             AS subject_ref,
             DATE(allergy.recordeddate)      AS allergy_day
     FROM    core__allergyintolerance        AS allergy
-    LEFT JOIN {{ prefix }}__cohort_study_population AS sp
-    ON      allergy.encounter_ref = sp.encounter_ref
-    AND     allergy.patient_ref   = sp.subject_ref
+    LEFT JOIN {{ prefix }}__encounter AS enc
+    ON      allergy.encounter_ref = enc.encounter_ref
+    AND     allergy.patient_ref   = enc.subject_ref
     WHERE   allergy.recordeddate  IS NOT  NULL
-    AND     sp.encounter_ref      IS      NULL
+    AND     enc.encounter_ref      IS      NULL
 ),
 date_candidates_ranked AS (
     SELECT  date_candidates.allergyintolerance_ref,
-            sp.encounter_ref AS encounter_ref_link,
+            enc.encounter_ref AS encounter_ref_link,
             ROW_NUMBER() OVER (
                 PARTITION BY date_candidates.allergyintolerance_ref
                 ORDER BY
                     -- Tie-Break #1: encounter starts on the date-mapped day
                     CASE
-                        WHEN date_candidates.allergy_day = sp.enc_period_start_day
+                        WHEN date_candidates.allergy_day = enc.enc_period_start_day
                         THEN 0 ELSE 1
                     END,
                     -- Tie-Break #2: narrowest window
                     DATE_DIFF(
                         'day',
-                        sp.enc_period_start_day,
-                        sp.enc_period_end_day_filled
+                        enc.enc_period_start_day,
+                        enc.enc_period_end_day_filled
                     ) ASC,
                     -- Tie-Break #3: start closest to the date-mapped day
                     ABS(
                         DATE_DIFF(
                             'day',
-                            sp.enc_period_start_day,
+                            enc.enc_period_start_day,
                             date_candidates.allergy_day
                         )
                     ) ASC,
                     -- Tie-Break #4: encounter ordinal
-                    sp.enc_period_ordinal ASC,
+                    enc.enc_period_ordinal ASC,
                     -- Tie-Break #5: encounter_ref
-                    sp.encounter_ref ASC
+                    enc.encounter_ref ASC
             ) AS allergy_link_rank
     FROM    date_candidates
-    JOIN    {{ prefix }}__cohort_study_population AS sp
-    ON      sp.subject_ref = date_candidates.subject_ref
-    AND     date_candidates.allergy_day BETWEEN sp.enc_period_start_day AND sp.enc_period_end_day_filled
+    JOIN    {{ prefix }}__encounter AS enc
+    ON      enc.subject_ref = date_candidates.subject_ref
+    AND     date_candidates.allergy_day BETWEEN enc.enc_period_start_day AND enc.enc_period_end_day_filled
 ),
 date_candidates_links AS (
     SELECT  allergyintolerance_ref,

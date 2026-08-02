@@ -1,17 +1,17 @@
-CREATE  TABLE   {{ prefix }}__cohort_study_population_obs_base AS
+CREATE  TABLE   {{ prefix }}__encounter_obs_base AS
 WITH
 has_encounter AS (
     SELECT  DISTINCT
             subject_ref,
             encounter_ref
-    FROM    {{ prefix }}__cohort_study_population
+    FROM    {{ prefix }}__encounter
     WHERE   encounter_ref IS NOT NULL
 ),
 patient_date_range AS (
     SELECT  subject_ref,
             MIN(enc_period_start_day)       AS min_enc_day,
             MAX(enc_period_end_day_filled)  AS max_enc_day
-    FROM    {{ prefix }}__cohort_study_population
+    FROM    {{ prefix }}__encounter
     WHERE   encounter_ref IS NOT NULL
     GROUP BY subject_ref
 )

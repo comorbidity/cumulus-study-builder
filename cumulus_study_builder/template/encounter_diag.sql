@@ -1,6 +1,6 @@
-CREATE  TABLE   {{ prefix }}__cohort_study_population_diag AS
+CREATE  TABLE   {{ prefix }}__encounter_diag AS
 WITH
--- Priority A: encounter_ref maps to retained study_population encounter
+-- Priority A: encounter_ref maps to a retained encounter row
 by_encounter AS (
     SELECT
             diag.status                     AS diag_status,
@@ -18,17 +18,17 @@ by_encounter AS (
             diag.encounter_ref              AS encounter_ref,
             diag.encounter_ref              AS encounter_ref_link,
             'encounter_ref'                 AS encounter_ref_link_col
-    FROM    {{ prefix }}__cohort_study_population   AS sp
+    FROM    {{ prefix }}__encounter   AS enc
     JOIN    core__diagnosticreport                  AS diag
-    ON      sp.encounter_ref = diag.encounter_ref
-    AND     sp.subject_ref   = diag.subject_ref
+    ON      enc.encounter_ref = diag.encounter_ref
+    AND     enc.subject_ref   = diag.subject_ref
     WHERE   diag.encounter_ref IS NOT NULL
 ),
 
 -- Priority B candidates: effectivedatetime present AND the report's encounter_ref is
--- NOT retained study_population encounter. The anti-join against
--- cohort_study_population covers BOTH a true-null encounter_ref (never matches) and
--- an encounter_ref pointing at an encounter dropped by the population filters.
+-- NOT a retained encounter row. The anti-join against
+-- encounter covers BOTH a true-null encounter_ref (never matches) and
+-- an encounter_ref pointing at an encounter dropped by the study-encounter filters.
 -- NOTE: anti-join depends on consistent subject_ref formatting across the two tables.
 date_candidates AS (
     SELECT  DISTINCT
@@ -36,47 +36,47 @@ date_candidates AS (
             diag.subject_ref,
             diag.effectivedatetime_day      AS candidate_day
     FROM    core__diagnosticreport          AS diag
-    LEFT JOIN {{ prefix }}__cohort_study_population AS sp
-    ON      diag.encounter_ref = sp.encounter_ref
-    AND     diag.subject_ref   = sp.subject_ref
+    LEFT JOIN {{ prefix }}__encounter AS enc
+    ON      diag.encounter_ref = enc.encounter_ref
+    AND     diag.subject_ref   = enc.subject_ref
     WHERE   diag.effectivedatetime_day  IS NOT  NULL
-    AND     sp.encounter_ref            IS      NULL
+    AND     enc.encounter_ref            IS      NULL
 ),
 date_candidates_ranked AS (
     SELECT
             diag.diagnosticreport_ref,
-            sp.encounter_ref AS encounter_ref_link,
+            enc.encounter_ref AS encounter_ref_link,
             ROW_NUMBER() OVER (
                 PARTITION BY diag.diagnosticreport_ref
                 ORDER BY
                     -- Tie-Break #1: encounter starts on the date-mapped day
                     CASE
-                        WHEN diag.candidate_day = sp.enc_period_start_day
+                        WHEN diag.candidate_day = enc.enc_period_start_day
                         THEN 0 ELSE 1
                     END,
                     -- Tie-Break #2: narrowest window
                     DATE_DIFF(
                         'day',
-                        sp.enc_period_start_day,
-                        sp.enc_period_end_day_filled
+                        enc.enc_period_start_day,
+                        enc.enc_period_end_day_filled
                     ) ASC,
                     -- Tie-Break #3: start closest to the date-mapped day
                     ABS(
                         DATE_DIFF(
                             'day',
-                            sp.enc_period_start_day,
+                            enc.enc_period_start_day,
                             diag.candidate_day
                         )
                     ) ASC,
                     -- Tie-Break #4: encounter ordinal
-                    sp.enc_period_ordinal ASC,
+                    enc.enc_period_ordinal ASC,
                     -- Tie-Break #5: encounter_ref
-                    sp.encounter_ref ASC
+                    enc.encounter_ref ASC
             ) AS link_rank
     FROM    date_candidates AS diag
-    JOIN    {{ prefix }}__cohort_study_population AS sp
-    ON      sp.subject_ref = diag.subject_ref
-    AND     diag.candidate_day BETWEEN sp.enc_period_start_day AND sp.enc_period_end_day_filled
+    JOIN    {{ prefix }}__encounter AS enc
+    ON      enc.subject_ref = diag.subject_ref
+    AND     diag.candidate_day BETWEEN enc.enc_period_start_day AND enc.enc_period_end_day_filled
 ),
 date_candidates_links AS (
     SELECT  diagnosticreport_ref,

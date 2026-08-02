@@ -1,6 +1,6 @@
-CREATE  TABLE   {{ prefix }}__cohort_study_population_rx AS
+CREATE  TABLE   {{ prefix }}__encounter_rx AS
 WITH
--- Priority A: encounter_ref maps to retained study_population encounter
+-- Priority A: encounter_ref maps to a retained encounter row
 by_encounter AS (
     SELECT  DISTINCT
             rx.status                   AS rx_status,
@@ -16,51 +16,51 @@ by_encounter AS (
             rx.encounter_ref            AS encounter_ref,
             rx.encounter_ref            AS encounter_ref_link,
             'encounter_ref'             AS encounter_ref_link_col
-    FROM    {{ prefix }}__cohort_study_population AS sp
+    FROM    {{ prefix }}__encounter AS enc
     JOIN    core__medicationrequest AS rx
-    ON      sp.encounter_ref = rx.encounter_ref
-    AND     sp.subject_ref   = rx.subject_ref
+    ON      enc.encounter_ref = rx.encounter_ref
+    AND     enc.subject_ref   = rx.subject_ref
     WHERE   rx.encounter_ref IS NOT NULL
 ),
 -- Priority B candidates: authoredon present AND the request's encounter_ref is NOT a
--- retained study_population encounter. The anti-join against cohort_study_population
+-- retained encounter row. The anti-join against encounter
 -- covers BOTH a true-null encounter_ref (never matches) and an encounter_ref pointing
--- at an encounter dropped by the population filters.
+-- at an encounter dropped by the study-encounter filters.
 date_candidates AS (
     SELECT  DISTINCT
             rx.medicationrequest_ref,
             rx.subject_ref,
             DATE(rx.authoredon)     AS rx_authoredon_day
     FROM    core__medicationrequest AS rx
-    LEFT JOIN {{ prefix }}__cohort_study_population AS sp
-    ON      rx.encounter_ref = sp.encounter_ref
-    AND     rx.subject_ref   = sp.subject_ref
+    LEFT JOIN {{ prefix }}__encounter AS enc
+    ON      rx.encounter_ref = enc.encounter_ref
+    AND     rx.subject_ref   = enc.subject_ref
     WHERE   rx.authoredon    IS NOT NULL
-    AND     sp.encounter_ref IS     NULL
+    AND     enc.encounter_ref IS     NULL
 ),
 date_candidates_ranked AS (
     SELECT  date_candidates.medicationrequest_ref,
-            sp.encounter_ref AS encounter_ref_link,
+            enc.encounter_ref AS encounter_ref_link,
             date_candidates.subject_ref,
             ROW_NUMBER() OVER (
                 PARTITION BY date_candidates.medicationrequest_ref
                 ORDER BY
                     -- Tie-Break #1: encounter starts on the date-mapped day
-                    CASE WHEN date_candidates.rx_authoredon_day = sp.enc_period_start_day
+                    CASE WHEN date_candidates.rx_authoredon_day = enc.enc_period_start_day
                          THEN 0 ELSE 1 END,
                     -- Tie-Break #2: narrowest window
-                    DATE_DIFF('day', sp.enc_period_start_day, sp.enc_period_end_day_filled) ASC,
+                    DATE_DIFF('day', enc.enc_period_start_day, enc.enc_period_end_day_filled) ASC,
                     -- Tie-Break #3: start closest to the date-mapped day
-                    ABS(DATE_DIFF('day', sp.enc_period_start_day, date_candidates.rx_authoredon_day)) ASC,
+                    ABS(DATE_DIFF('day', enc.enc_period_start_day, date_candidates.rx_authoredon_day)) ASC,
                     -- Tie-Break #4: encounter ordinal
-                    sp.enc_period_ordinal ASC,
+                    enc.enc_period_ordinal ASC,
                     -- Tie-Break #5: encounter_ref
-                    sp.encounter_ref ASC
+                    enc.encounter_ref ASC
             ) AS rx_link_rank
     FROM    date_candidates
-    JOIN    {{ prefix }}__cohort_study_population AS sp
-    ON      sp.subject_ref = date_candidates.subject_ref
-    AND     date_candidates.rx_authoredon_day BETWEEN sp.enc_period_start_day AND sp.enc_period_end_day_filled
+    JOIN    {{ prefix }}__encounter AS enc
+    ON      enc.subject_ref = date_candidates.subject_ref
+    AND     date_candidates.rx_authoredon_day BETWEEN enc.enc_period_start_day AND enc.enc_period_end_day_filled
 ),
 date_candidates_links AS (
     SELECT  medicationrequest_ref,

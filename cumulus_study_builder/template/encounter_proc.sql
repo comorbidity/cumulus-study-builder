@@ -1,6 +1,6 @@
-CREATE  TABLE   {{ prefix }}__cohort_study_population_proc AS
+CREATE  TABLE   {{ prefix }}__encounter_proc AS
 WITH
--- Priority A: encounter_ref maps to retained study_population encounter.
+-- Priority A: encounter_ref maps to a retained encounter row.
 by_encounter AS (
     SELECT  DISTINCT
             proc.category_code      AS proc_category_code,
@@ -18,17 +18,17 @@ by_encounter AS (
             proc.encounter_ref      AS encounter_ref,
             proc.encounter_ref      AS encounter_ref_link,
             'encounter_ref'         AS encounter_ref_link_col
-    FROM    {{ prefix }}__cohort_study_population AS sp
+    FROM    {{ prefix }}__encounter AS enc
     JOIN    core__procedure         AS proc
-    ON      sp.encounter_ref = proc.encounter_ref
-    AND     sp.subject_ref   = proc.subject_ref
+    ON      enc.encounter_ref = proc.encounter_ref
+    AND     enc.subject_ref   = proc.subject_ref
     WHERE   proc.encounter_ref      IS NOT NULL
 ),
 
 -- Priority B candidates: date present AND the procedure's encounter_ref is NOT a
--- retained study_population encounter. The anti-join against
--- cohort_study_population covers BOTH a true-null encounter_ref (never matches) and
--- an encounter_ref pointing at an encounter dropped by the population filters.
+-- retained encounter row. The anti-join against
+-- encounter covers BOTH a true-null encounter_ref (never matches) and
+-- an encounter_ref pointing at an encounter dropped by the study-encounter filters.
 -- NOTE: anti-join depends on consistent subject_ref formatting across the two tables.
 date_candidates AS (
     SELECT  DISTINCT
@@ -37,46 +37,46 @@ date_candidates AS (
             COALESCE(DATE(proc.performeddatetime), DATE(proc.performedperiod_start))
                             AS candidate_day
     FROM    core__procedure AS proc
-    LEFT JOIN {{ prefix }}__cohort_study_population AS sp
-    ON      proc.encounter_ref = sp.encounter_ref
-    AND     proc.subject_ref   = sp.subject_ref
+    LEFT JOIN {{ prefix }}__encounter AS enc
+    ON      proc.encounter_ref = enc.encounter_ref
+    AND     proc.subject_ref   = enc.subject_ref
     WHERE   COALESCE(DATE(proc.performeddatetime), DATE(proc.performedperiod_start)) IS NOT NULL
-    AND     sp.encounter_ref   IS NULL
+    AND     enc.encounter_ref   IS NULL
 ),
 date_candidates_ranked AS (
     SELECT  date_candidates.procedure_ref,
-            sp.encounter_ref AS encounter_ref_link,
+            enc.encounter_ref AS encounter_ref_link,
             ROW_NUMBER() OVER (
                 PARTITION BY date_candidates.procedure_ref
                 ORDER BY
                     -- Tie-Break #1: encounter starts on the date-mapped day
                     CASE
-                        WHEN date_candidates.candidate_day = sp.enc_period_start_day
+                        WHEN date_candidates.candidate_day = enc.enc_period_start_day
                         THEN 0 ELSE 1
                     END,
                     -- Tie-Break #2: narrowest window
                     DATE_DIFF(
                         'day',
-                        sp.enc_period_start_day,
-                        sp.enc_period_end_day_filled
+                        enc.enc_period_start_day,
+                        enc.enc_period_end_day_filled
                     ) ASC,
                     -- Tie-Break #3: start closest to the date-mapped day
                     ABS(
                         DATE_DIFF(
                             'day',
-                            sp.enc_period_start_day,
+                            enc.enc_period_start_day,
                             date_candidates.candidate_day
                         )
                     ) ASC,
                     -- Tie-Break #4: encounter ordinal
-                    sp.enc_period_ordinal ASC,
+                    enc.enc_period_ordinal ASC,
                     -- Tie-Break #5: encounter_ref
-                    sp.encounter_ref ASC
+                    enc.encounter_ref ASC
             ) AS link_rank
     FROM    date_candidates
-    JOIN    {{ prefix }}__cohort_study_population AS sp
-    ON      sp.subject_ref = date_candidates.subject_ref
-    AND     date_candidates.candidate_day BETWEEN sp.enc_period_start_day AND sp.enc_period_end_day_filled
+    JOIN    {{ prefix }}__encounter AS enc
+    ON      enc.subject_ref = date_candidates.subject_ref
+    AND     date_candidates.candidate_day BETWEEN enc.enc_period_start_day AND enc.enc_period_end_day_filled
 ),
 date_candidates_links AS (
     SELECT  procedure_ref,

@@ -1,4 +1,4 @@
-CREATE  TABLE   {{ prefix }}__cohort_study_population_lab_base AS
+CREATE  TABLE   {{ prefix }}__encounter_lab_base AS
 SELECT  DISTINCT
         obs.observation_code                AS lab_observation_code,
         obs.observation_system              AS lab_observation_system,
@@ -23,6 +23,6 @@ SELECT  DISTINCT
         obs.specimen_ref                    AS specimen_ref,
         obs.encounter_ref                   AS encounter_ref,
         obs.obs_has_encounter               as obs_has_encounter
-FROM    {{ prefix }}__cohort_study_population_obs_base AS obs
+FROM    {{ prefix }}__encounter_obs_base AS obs
 WHERE   category_code = 'laboratory'
 ;
