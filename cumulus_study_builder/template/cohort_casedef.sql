@@ -3,15 +3,15 @@ WITH
 -- casedef matches for encounter_ref
 casedef_encounter AS (
     SELECT  DISTINCT
-            sp.age_at_visit,
-            sp.age_group,
-            sp.enc_period_start_day,
-            sp.enc_period_ordinal,
+            enc.age_at_visit,
+            enc.age_group,
+            enc.enc_period_start_day,
+            enc.enc_period_ordinal,
             casedef.*
     FROM    {{ prefix }}__cohort_casedef_include    AS casedef
-    JOIN    {{ prefix }}__cohort_study_population   AS sp
-    ON      casedef.subject_ref = sp.subject_ref
-    AND     casedef.{{ encounter_ref }} = sp.encounter_ref
+    JOIN    {{ prefix }}__encounter   AS enc
+    ON      casedef.subject_ref = enc.subject_ref
+    AND     casedef.{{ encounter_ref }} = enc.encounter_ref
 ),
 -- rare use of select DISTINCT for query optimization
 casedef_subject AS (
@@ -21,22 +21,18 @@ casedef_subject AS (
 ),
 -- history of subject_ref
 history AS (
-    SELECT  sp.enc_period_ordinal,
-            sp.enc_period_start_day,
-            sp.age_at_visit,
-            sp.age_group,
-            sp.gender,
-            sp.race_display,
-            sp.status,
-            sp.enc_class_code,
-            sp.enc_class_display,
-            sp.enc_type_display,
-            sp.enc_servicetype_display,
-            sp.subject_ref,
-            sp.encounter_ref
+    SELECT  enc.enc_period_ordinal,
+            enc.enc_period_start_day,
+            enc.age_at_visit,
+            enc.age_group,
+            enc.gender,
+            enc.race_display,
+            enc.status,
+            enc.subject_ref,
+            enc.encounter_ref
     FROM    casedef_subject
-    JOIN    {{ prefix }}__cohort_study_population as sp
-    ON      casedef_subject.subject_ref = sp.subject_ref
+    JOIN    {{ prefix }}__encounter as enc
+    ON      casedef_subject.subject_ref = enc.subject_ref
 ),
 -- min/max age and periods for subject_ref
 calc_duration as (
@@ -92,10 +88,6 @@ SELECT  DISTINCT
         history.gender,
         history.race_display,
         history.status,
-        history.enc_class_code,
-        history.enc_class_display,
-        history.enc_type_display,
-        history.enc_servicetype_display,
         history.enc_period_start_day,
         history.enc_period_ordinal,
         history.subject_ref,

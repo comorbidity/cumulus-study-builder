@@ -12,7 +12,7 @@ SELECT  DISTINCT
         --
         lab.*
 FROM    {{ prefix }}__cohort_casedef as casedef
-JOIN    {{ prefix }}__cohort_study_population_lab as lab
+JOIN    {{ prefix }}__encounter_lab as lab
 ON      casedef.{{ encounter_ref }} = lab.{{ encounter_ref }}
 LEFT JOIN {{ prefix }}__cohort_variable_union AS variable_union
 ON      lab.observation_ref = variable_union.resource_ref

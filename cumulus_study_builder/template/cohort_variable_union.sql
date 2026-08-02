@@ -27,25 +27,17 @@ SELECT  DISTINCT
         evidence_distinct.system,
         evidence_distinct.resource_ref,
         evidence_distinct.{{ encounter_ref }},
-        sp.subject_ref,
-        sp.status,
-        sp.age_at_visit,
-        sp.age_group,
-        sp.gender,
-        sp.race_display,
-        sp.ethnicity_display,
-        sp.enc_period_ordinal,
-        sp.enc_period_start_day,
-        sp.enc_period_end_day,
-        sp.enc_class_code,
-        sp.enc_class_display,
-        sp.enc_type_system,
-        sp.enc_type_code,
-        sp.enc_type_display,
-        sp.enc_servicetype_system,
-        sp.enc_servicetype_code,
-        sp.enc_servicetype_display
+        enc.subject_ref,
+        enc.status,
+        enc.age_at_visit,
+        enc.age_group,
+        enc.gender,
+        enc.race_display,
+        enc.ethnicity_display,
+        enc.enc_period_ordinal,
+        enc.enc_period_start_day,
+        enc.enc_period_end_day
 FROM    evidence_distinct
-JOIN    {{ prefix }}__cohort_study_population AS sp
-ON      evidence_distinct.{{ encounter_ref }} = sp.encounter_ref
+JOIN    {{ prefix }}__encounter AS enc
+ON      evidence_distinct.{{ encounter_ref }} = enc.encounter_ref
 ;

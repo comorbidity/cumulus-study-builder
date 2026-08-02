@@ -9,7 +9,7 @@ WITH notes AS (
             diag.diag_effectivedatetime_day AS note_day,
             diag.subject_ref,
             diag.{{ encounter_ref }}
-    FROM    {{ prefix }}__cohort_study_population_diag AS diag
+    FROM    {{ prefix }}__encounter_diag AS diag
     WHERE   diag.aux_has_text = 1
     UNION ALL
     SELECT  'doc',
@@ -17,7 +17,7 @@ WITH notes AS (
             doc.doc_link_day,
             doc.subject_ref,
             doc.{{ encounter_ref }}
-    FROM    {{ prefix }}__cohort_study_population_doc AS doc
+    FROM    {{ prefix }}__encounter_doc AS doc
     WHERE   doc.aux_has_text = 1
 )
 SELECT  DISTINCT

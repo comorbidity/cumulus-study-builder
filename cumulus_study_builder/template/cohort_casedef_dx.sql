@@ -11,7 +11,7 @@ SELECT  DISTINCT
         --
         dx.*
 FROM    {{ prefix }}__cohort_casedef as casedef
-JOIN    {{ prefix }}__cohort_study_population_dx as dx
+JOIN    {{ prefix }}__encounter_dx as dx
 ON      casedef.{{ encounter_ref }} = dx.{{ encounter_ref }}
 LEFT JOIN {{ prefix }}__cohort_variable_union AS variable_union
 ON      dx.condition_ref = variable_union.resource_ref

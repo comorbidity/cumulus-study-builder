@@ -7,7 +7,7 @@ SELECT DISTINCT
         var.system,
         lab.*
 FROM    {{ prefix }}__cohort_variable_union         AS var
-JOIN    {{ prefix }}__cohort_study_population_lab    AS lab
+JOIN    {{ prefix }}__encounter_lab    AS lab
 ON      var.resource_ref = lab.observation_ref
 AND     var.system = lab.lab_observation_system
 AND     var.code = lab.lab_observation_code
