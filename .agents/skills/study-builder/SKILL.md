@@ -89,7 +89,12 @@ Walk the researcher through the stages in order, delegating to each skill:
 5. **Note extraction (optional)** — if the phenotype needs clinical text, pick the
    path: **chart-review** (LLM Pydantic models → JSON schema → NLP) for structured
    extraction, and/or **rapid-elastic** (query topics, KQL) for note retrieval. Both
-   run over the sampled notes.
+   run over the sampled notes. The chart-review models live in `llm/models/`
+   (`treatment`, `lab_base`, `diagnosis`, `surgery`, the `lab_panel_*` panels, and the
+   `document_type` / `document_topic` note-routing classifiers); register a new one in
+   `llm/create_schema.py`. This LLM layer is **decoupled from `make_study()`** — it
+   feeds `create_schema.py`, not the study_builder spine — so adding or editing a model
+   never runs in (or breaks) a `study_builder` rebuild.
 6. **Eligible** — invoke `eligible`: render the phenotype + analysis-spine family
    (best case/index date, therapy lines, outcome, risk set, KM/Cox/PSM timeline) and
    author the study cohort views.

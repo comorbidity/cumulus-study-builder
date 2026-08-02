@@ -195,6 +195,44 @@ covariates, one row per unit — is the SQL CTAS input handed to Python for PSM/
 | `eligible` | Adjust the risk-set predicate and `event_disposition` to your outcome and comparator design. |
 | `eligible_timeline` | Add study demographics (age at casedef), and any prespecified named outcome fields. keep covariates external. |
 
+## Worked guided cohort view (copy-paste)
+
+The guided layer is hand-authored raw SQL (not a jinja template). `tools/eligible.py`
+globs `athena/<prefix>__example_eligible_*.sql` and wires whatever it finds into
+`eligible.toml` on the next regenerate, in dependency order after the generated family
+it reads. A `.gitignore` exception keeps these one committable, so they travel with a
+fork. **The filename and the table names carry your literal study prefix** — when you
+set your prefix, name the file `<prefix>__example_eligible_<criteria>.sql` and use that
+same prefix in the `CREATE VIEW` / `FROM` (replace `example` below with your prefix).
+
+A clean, disease-agnostic starting point — the one-row-per-patient, first-line,
+single-strategy set for PSM / IPTW (`rx_class` is the exposure; the outcome is the
+generic time-to-event from `eligible_outcome`):
+
+```sql
+-- athena/example__example_eligible_firstline_single_agent.sql
+CREATE OR REPLACE VIEW example__example_eligible_firstline_single_agent AS
+WITH ranked AS (
+    SELECT  t.subject_ref, t.rx_class, t.index_date,
+            t.age_at_visit, t.gender,
+            t.outcome_event_bool, t.days_to_outcome_or_censor,
+            t.baseline_encounter_count,
+            ROW_NUMBER() OVER (                        -- one row per patient
+                PARTITION BY t.subject_ref
+                ORDER BY t.index_date ASC, t.rx_class ASC) AS rn
+    FROM    example__eligible_timeline AS t
+    WHERE   t.rx_therapy_line_number = 1               -- first line only
+      AND   t.outcome_risk_set_eligible_bool           -- in the outcome risk set
+      AND   t.baseline_encounter_count >= 1            -- minimally observed pre-index
+)
+SELECT * FROM ranked WHERE rn = 1;
+```
+
+Edit the `WHERE` to your inclusion/exclusion criteria (age at casedef, subtype arm,
+first-line failure, a qualifying outcome, top-down vs step-up), then
+`python -m cumulus_study_builder.tools.study_builder` to wire it. Broader sets (all
+lines, multiple classes per patient) need cluster-robust handling downstream.
+
 ## Which skill owns what
 
 The `eligible` skill owns `template/eligible_*.sql`, `tools/eligible.py`,

@@ -54,8 +54,8 @@ The starter ships with the placeholder `example`.
 ## Quickstart
 
 ```bash
-# 1. install (editable)
-pip install -e .
+# 1. install (editable; add the [test] extra so step 4's pytest is available)
+pip install -e ".[test]"
 
 # 2. regenerate every submanifest TOML + rendered athena SQL
 python -m cumulus_study_builder.tools.study_builder
@@ -77,11 +77,13 @@ Trino, `pytest` green). Step 5 needs your Athena/database connection.
 
 ## Rule of the road
 
-The `*.toml` and `athena/*.sql` files are **generated** — never hand-edit them.
-Edit the inputs (the `include_*` / valueset CSVs, `casedef.csv`, the Pydantic
+The `*.toml` and generated `athena/*.sql` files are **generated** — never hand-edit
+them. Edit the inputs (the `include_*` / valueset CSVs, `casedef.csv`, the Pydantic
 models, or the `template/*.sql` sources) and regenerate. The `eligible` family
-renders from `template/eligible_*.sql`; the one hand-authored SQL layer is the study
-cohort views (`athena/<prefix>__example_eligible_*.sql`).
+renders from `template/eligible_*.sql`. The one hand-authored SQL layer is the study
+cohort views (`athena/<prefix>__example_eligible_*.sql`) — the sole committed exception
+in `athena/` (a `.gitignore` rule keeps them tracked; everything else in `athena/` is
+regenerated and ignored).
 
 ## Layout
 

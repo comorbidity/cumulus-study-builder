@@ -110,9 +110,9 @@ analyst's hands and prevents look-ahead leakage. The reference has a copy-paste
 - **Strict (user-defined criteria).** Author a
   `<prefix>__example_eligible_*.sql` cohort view that filters `eligible` /
   `eligible_timeline` by explicit criteria — age at diagnosis, subtype, first-line
-  therapy failed, a qualifying outcome, top-down vs step-up. This is the same
-  pattern the IBD `ibd-eligible` skill uses for named cohort views. Confirm each
-  criterion before writing; ambiguous criteria get a clarifying question.
+  therapy failed, a qualifying outcome, top-down vs step-up. This is the named
+  cohort-view pattern the reference walks through. Confirm each criterion before
+  writing; ambiguous criteria get a clarifying question.
 - **Probabilistic (PSM / IPTW).** This stage's job is only to emit the **SQL CTAS
   analytic table**: `eligible_timeline` joined to the externally-assembled
   baseline covariates, one row per unit, all covariates flattened. Propensity-score
@@ -127,7 +127,7 @@ analyst's hands and prevents look-ahead leakage. The reference has a copy-paste
 Each template is a generic scaffold keyed off the built study. The reference walks
 each one, but the usual edits are: repoint `eligible_rx_date` at your rx-class
 study-variables (names starting `rx`), repoint `eligible_outcome`'s `WHERE` at your
-outcome valueset (default is procedure-aspect events, matching IBD surgery), add an
+outcome valueset (default is procedure-aspect events, e.g. a qualifying surgery), add an
 LLM rung to `eligible_dx` if you run chart-review, and refine `rx_is_line_forming`
 (e.g. exclude bridging steroids). Edit `template/eligible_*.sql`, then regenerate.
 

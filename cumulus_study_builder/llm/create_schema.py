@@ -1,8 +1,16 @@
 import os
 import json
 from pathlib import Path
+
 from cumulus_study_builder.llm.models.treatment import ExampleTreatmentAnnotation
 from cumulus_study_builder.llm.models.lab_base import ExampleLabPanelAnnotation
+from cumulus_study_builder.llm.models.lab_panel_cbc import CBCPanelAnnotation
+from cumulus_study_builder.llm.models.lab_panel_cmp import CMPPanelAnnotation
+from cumulus_study_builder.llm.models.lab_panel_iron import IronStudiesAnnotation
+from cumulus_study_builder.llm.models.diagnosis import DiseaseDiagnosisAnnotation
+from cumulus_study_builder.llm.models.surgery import SurgeryAnnotation
+from cumulus_study_builder.llm.models.document_type import DocumentTypeAnnotation
+from cumulus_study_builder.llm.models.document_topic import TopicRelevanceAnnotation
 
 BASE_DIR = Path(os.path.dirname(__file__))
 
@@ -20,10 +28,18 @@ def create(annotation, filename: str) -> Path:
 def create_all() -> list[Path]:
     """
     Register each chart-review Annotation here. Add a `create(...)` line per model.
+    These are generic examples — rename, trim, or replace them for your study.
     """
     return [
         create(ExampleTreatmentAnnotation, 'example-treatment-annotation.json'),
-        create(ExampleLabPanelAnnotation, 'example-lab-panel-annotation.json'),
+        create(ExampleLabPanelAnnotation,  'example-lab-panel-annotation.json'),
+        create(CBCPanelAnnotation,         'cbc-panel-annotation.json'),
+        create(CMPPanelAnnotation,         'cmp-panel-annotation.json'),
+        create(IronStudiesAnnotation,      'iron-studies-annotation.json'),
+        create(DiseaseDiagnosisAnnotation, 'diagnosis-annotation.json'),
+        create(SurgeryAnnotation,          'surgery-annotation.json'),
+        create(DocumentTypeAnnotation,     'document-type-annotation.json'),
+        create(TopicRelevanceAnnotation,   'topic-relevance-annotation.json'),
     ]
 
 if __name__ == "__main__":
