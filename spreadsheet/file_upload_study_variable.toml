@@ -1,0 +1,16 @@
+config_type = "file_upload"
+
+[tables.valueset_diag_example]
+file = "diag_example.csv"
+
+[tables.valueset_dx_example]
+file = "dx_example.csv"
+
+[tables.valueset_lab_example]
+file = "lab_example.csv"
+
+[tables.valueset_proc_example]
+file = "proc_example.csv"
+
+[tables.valueset_rx_example]
+file = "rx_example.csv"
