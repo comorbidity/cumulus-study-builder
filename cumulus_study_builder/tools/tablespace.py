@@ -39,9 +39,8 @@ def name_elastic(table: str, suffix=None) -> str:
     part = name_suffix('elastic', suffix)
     return name_join(part, table)
 
-def name_study_population(suffix=None) -> str:
-    table = name_suffix('study_population', suffix)
-    return name_join('cohort', table)
+def name_encounter(suffix=None) -> str:
+    return name_prefix(name_suffix('encounter', suffix))
 
 def name_cube(table: str, suffix: str = None) -> str:
     part = f'cube_{suffix}' if suffix else 'cube'
@@ -76,8 +75,8 @@ def sql_quote(expression:str | list[str], quote="'", seperator=',') -> str:
 #-----------------------------------------------------------------------------
 def ctas(source: str, variable: str, where: list) -> str:
     """
-    CTAS(create table as) will create a COHORT table as a subselection of the
-    study population cohort table.
+    CTAS(create table as) creates a COHORT table by selecting valueset matches
+    from an encounter evidence table.
     """
     from_list = sql_list([source, name_valueset(variable)])
     cohort_name = name_cohort(variable)

@@ -27,7 +27,7 @@ def filter_list(item_list):
 def union_tables() -> Path:
     from cumulus_study_builder.tools.tablespace import name_prefix
     ctas = f"CREATE TABLE {name_prefix('qa_union_all')} AS "
-    text = [f"SELECT COUNT(*) as cnt, '{table}' as test \n FROM {table}" for table in list_tables()]
+    text = [f"SELECT COUNT(*) AS cnt, '{table}' AS test\nFROM {table}" for table in list_tables()]
     text = ctas + '\n' + '\n UNION ALL \n'.join(text) if text else ctas + "\n SELECT 0 as cnt, 'none' as test"
     return filetool.write_text(text, filetool.path_tests_athena(f"{UNION_TABLES}.sql"))
 

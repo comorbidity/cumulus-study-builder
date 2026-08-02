@@ -1,6 +1,6 @@
 from pathlib import Path
 from cumulus_study_builder.tools import (
-    study_population,
+    study_encounter,
     study_variable,
     study_variable_wide,
     casedef,
@@ -17,7 +17,7 @@ def make_study() -> list[Path]:
     include_* CSVs, valueset CSVs, casedef.csv, or the Pydantic models), then
     run `cumulus-library build`.
     """
-    return (study_population.make() +
+    return (study_encounter.make() +
             study_variable.make() +
             study_variable_wide.make() +
             casedef.make() +

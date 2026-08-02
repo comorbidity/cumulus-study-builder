@@ -9,7 +9,7 @@ case/index date, therapy lines, a time-to-event outcome, and a survival / PSM an
 spine) for target trial emulation, CDS, and patient matching.
 
 Combine this repo with the nine **skills** (in `.agents/skills/`: study-builder,
-study-population, study-variable, rxnorm, loinc, case-definition, chart-review,
+study-encounter, study-variable, rxnorm, loinc, case-definition, chart-review,
 rapid-elastic, eligible) and a researcher can stand up a new study by editing CSVs and
 Pydantic models — the SQL is generated. See `AGENTS.md` for the cross-agent layout.
 
@@ -26,13 +26,22 @@ per study, and how it maps to the Cumulus ecosystem.
 
 | Stage | You edit | Generator |
 |---|---|---|
-| study_population | `spreadsheet/include_*.csv` (study period, age, gender, utilization) | `tools/study_population.py` |
+| study_encounter | `spreadsheet/include_*.csv` (study period, age, gender, utilization) | `tools/study_encounter.py` |
 | study_variable | `spreadsheet/<aspect>_<name>.csv` coded valuesets | `tools/study_variable.py` |
 | study_variable_wide | (auto from the variable list) | `tools/study_variable_wide.py` |
 | casedef | `spreadsheet/casedef.csv` (subtype, system, code, display, tier) | `tools/casedef.py` |
 | sample | (auto — samples notes for chart review) | `tools/sample.py` |
 | chart-review (LLM) | `llm/models/*.py` Pydantic models | `llm/create_*.py` |
 | eligible | `template/eligible_*.sql` family (generated) + hand-authored `example_eligible_*` cohort views | `tools/eligible.py` |
+
+The foundational `<prefix>__encounter` table has exactly one row per
+non-null `encounter_ref`. It keeps encounter identity, subject, dates/ordinal, status,
+and patient demographics. Potentially multivalued class, service type, encounter type,
+priority, reason, and discharge-disposition coding lives in
+`<prefix>__encounter_enc`, which may contain multiple rows per encounter.
+The source family is `template/encounter*.sql`, rendered as
+`athena/<prefix>__encounter*.sql`. Valueset-defined variables remain in the separate
+`<prefix>__cohort_<variable>` namespace.
 
 Aspects (FHIR resources): `enc, dx, rx, lab, proc, doc, diag, allergy`.
 
@@ -96,7 +105,7 @@ cumulus_study_builder/
   llm/                     chart-review: models/ (Pydantic), create_*.py, template/
 spreadsheet/               CSV inputs (include_*, valuesets, casedef.csv) + file_upload_*.toml
 tests/                     template QA tests + test scaffolding
-.agents/skills/            nine skills (single source): study-builder, study-population,
+.agents/skills/            nine skills (single source): study-builder, study-encounter,
                            study-variable, rxnorm, loinc, case-definition, chart-review,
                            rapid-elastic, eligible
 .claude/skills -> ../.agents/skills   (per-agent symlinks: .claude, .codex, .gemini)

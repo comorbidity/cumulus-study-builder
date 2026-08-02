@@ -12,9 +12,9 @@
 #     cumulus-library build --target example   (use your study_prefix)
 study_prefix = "example"
 
-[[stages.study_population]]
+[[stages.study_encounter]]
 type = "submanifest"
-files = ['study_population.toml']
+files = ['study_encounter.toml']
 
 [[stages.study_variable]]
 type = "submanifest"

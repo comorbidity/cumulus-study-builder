@@ -35,7 +35,7 @@ is the spine that sequences the stage skills in dependency order:
 
 | Skill | What it does |
 |---|---|
-| **study-population** | The base cohort: age, gender, study period, encounter utilization. |
+| **study-encounter** | Encounter filtering by age, gender, study period, and utilization; produces `<prefix>__encounter*`. |
 | **study-variable** | Coded valueset CSVs per FHIR aspect (dx, rx, lab, proc, diag). |
 | **rxnorm** | Companion to study-variable for medication (`rx_`) valuesets (RxNorm / RxClass). |
 | **loinc** | Companion to study-variable for lab / DiagnosticReport (`lab_`, `diag_`) valuesets (LOINC). |

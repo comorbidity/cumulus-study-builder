@@ -10,7 +10,7 @@ from cumulus_study_builder.tools import filetool
 # Full cumulus-library StudyManifest (LAZY. do not call at import time).
 #
 # StudyManifest eagerly reads every submanifest TOML listed in manifest.toml
-# (study_population.toml, study_variable.toml, ...). Those submanifests are GENERATED
+# (study_encounter.toml, study_variable.toml, ...). Those submanifests are GENERATED
 # by the tools/*.py generators, so on a fresh checkout they do not exist yet.
 # Building the full manifest at import time would dead-lock the bootstrap. you could
 # not run the generators that create the very files the manifest needs. So keep this

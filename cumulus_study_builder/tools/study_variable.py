@@ -64,16 +64,16 @@ def list_files() -> list[Path]:
     return [filetool.path_athena(file) for file in list_tables_cohort()]
 
 #-----------------------------------------------------------------------------
-# Cohort variable JOIN study population
+# Cohort variable JOIN encounter evidence
 #-----------------------------------------------------------------------------
 def make_cohort(variable: str) -> Path:
     col = fhir_reference.get_column(variable)
-    population = tablespace.name_study_population(col.aspect.name)
+    encounter = tablespace.name_encounter(col.aspect.name)
     valueset_name = tablespace.name_valueset(variable)
     cohort_name = tablespace.name_cohort(variable)
-    where = [f'{population}.{col.code} = {valueset_name}.code',
-             f'{population}.{col.system} = {valueset_name}.system']
-    sql = tablespace.ctas(population, variable, where)
+    where = [f'{encounter}.{col.code} = {valueset_name}.code',
+             f'{encounter}.{col.system} = {valueset_name}.system']
+    sql = tablespace.ctas(encounter, variable, where)
     return filetool.save_athena_view(cohort_name, sql)
 
 #-----------------------------------------------------------------------------

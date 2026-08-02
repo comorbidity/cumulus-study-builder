@@ -12,7 +12,7 @@ The `tools/` + `template/` generator design is already used by several studies â
 of the spine, and they have drifted:** kidney-transplant added `tools/drug_eras.py`,
 `tools/vocab.py`, `tools/guard.py`, a `refactor/` package; glioma added
 `tools/casedef_rx_variables.py`; cabot added `tools/schema.py` and a `vital` aspect.
-The same `study_population.py` / `casedef.py` / `manifest.py` now exist in four
+The same `study_encounter.py` / `casedef.py` / `manifest.py` now exist in four
 slightly-different versions. A bug fixed in one is not fixed in the others.
 
 That drift is the maintenance problem a module solves: **fix the spine once, version

@@ -11,10 +11,19 @@ class TestTemplate(unittest.TestCase):
         text = template.load(file)
         self.assertTrue(f'{tablespace.PREFIX}__cohort_study_period' in text)
 
-    def test_study_population_renders(self):
-        # renders without error (requires the study_population templates present)
-        template.load('cohort_study_population.sql')
+    def test_study_encounter_renders(self):
+        # Renders without error and asserts the base encounter grain contract.
+        text = template.load('encounter.sql')
+        self.assertIn(f'{tablespace.PREFIX}__encounter AS', text)
+        self.assertIn('PARTITION BY encounter_ref', text)
+        self.assertIn('encounter_row_num = 1', text)
+        self.assertIn('enc.encounter_ref IS NOT NULL', text)
+        self.assertNotIn('enc_servicetype_code', text)
+        self.assertEqual(
+            f'{tablespace.PREFIX}__encounter_dx',
+            tablespace.name_encounter('dx'),
+        )
 
     # NOTE: the source study also tests aspect + sample templates
-    # (cohort_study_population_dx.sql, sample_casedef_temporality.sql). Those
+    # (encounter_dx.sql, sample_casedef_temporality.sql). Those
     # templates are copied from your source study on sync; re-enable then.

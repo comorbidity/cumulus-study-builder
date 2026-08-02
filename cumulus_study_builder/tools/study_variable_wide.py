@@ -16,7 +16,7 @@ from cumulus_study_builder.tools.study_variable import (
 # Builds the multi-variable UNION and WIDE (pivoted) representations of the
 # study variables:
 #   cohort_variable_union            (all variables, long form)
-#   cohort_variable_union_<aspect>   (joined back to study_population_<aspect>)
+#   cohort_variable_union_<aspect>   (joined back to encounter_<aspect>)
 #   cohort_variable_wide             (boolean pivot, one column per variable)
 #   cohort_variable_wide_<aspect>    (per-aspect column-group pivot)
 #
