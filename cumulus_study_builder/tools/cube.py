@@ -1,15 +1,21 @@
 from pathlib import Path
 from cumulus_library.builders.counts import CountsBuilder
 from cumulus_study_builder.tools import filetool
-from cumulus_study_builder.tools.tablespace import name_trim, name_cube, ctas_as_view
+from cumulus_study_builder.tools.tablespace import name_trim, name_prefix, name_cube, ctas_as_view
 from cumulus_study_builder.tools.settings import CUBE_MIN_SUBJECTS, CUBE_AS_VIEW
 from cumulus_study_builder.tools import manifest
 
 MANIFEST = manifest.get_manifest()
 PREFIX = MANIFEST.get_study_prefix()
 
+PATIENT_SOURCE_TABLE = name_prefix('encounter')
+ENCOUNTER_SOURCE_TABLE = name_prefix('encounter_enc')
+DOCUMENT_SOURCE_TABLE = name_prefix('encounter_doc')
+DIAGNOSTIC_SOURCE_TABLE = name_prefix('encounter_diag')
+NOTE_SOURCE_TABLE = name_prefix('sample_casedef')
+
 def cube_fhir_resource(primary_id:str,
-                       source_table='study_population',
+                       source_table:str,
                        table_cols=None,
                        table_name=None,
                        min_subject=CUBE_MIN_SUBJECTS) -> Path:
@@ -27,7 +33,7 @@ def cube_fhir_resource(primary_id:str,
         table_name = name_trim(source_table)
         table_name = name_cube(table_name, count_type)
 
-    table_cols = sorted(list(set(table_cols)))
+    table_cols = sorted(set(table_cols or []))
     sql = CountsBuilder(manifest=manifest.get_manifest()).get_count_query(
             table_name=table_name,
             source_table=source_table,
@@ -40,7 +46,7 @@ def cube_fhir_resource(primary_id:str,
 
     return filetool.save_athena_view(table_name, sql)
 
-def cube_patient(source_table='study_population',
+def cube_patient(source_table=PATIENT_SOURCE_TABLE,
                  table_cols=None,
                  table_name=None,
                  min_subject=CUBE_MIN_SUBJECTS) -> Path:
@@ -51,7 +57,7 @@ def cube_patient(source_table='study_population',
         table_name=table_name,
         min_subject=min_subject)
 
-def cube_encounter(source_table='study_population',
+def cube_encounter(source_table=ENCOUNTER_SOURCE_TABLE,
                    table_cols=None,
                    table_name=None,
                    min_subject=CUBE_MIN_SUBJECTS) -> Path:
@@ -62,7 +68,7 @@ def cube_encounter(source_table='study_population',
         table_name=table_name,
         min_subject=min_subject)
 
-def cube_document(source_table='study_population_doc',
+def cube_document(source_table=DOCUMENT_SOURCE_TABLE,
                   table_cols=None,
                   table_name=None,
                   min_subject=CUBE_MIN_SUBJECTS) -> Path:
@@ -73,7 +79,7 @@ def cube_document(source_table='study_population_doc',
         table_name=table_name,
         min_subject=min_subject)
 
-def cube_diagnostic(source_table='study_population_doc',
+def cube_diagnostic(source_table=DIAGNOSTIC_SOURCE_TABLE,
                     table_cols=None,
                     table_name=None,
                     min_subject=CUBE_MIN_SUBJECTS) -> Path:
@@ -84,7 +90,7 @@ def cube_diagnostic(source_table='study_population_doc',
         table_name=table_name,
         min_subject=min_subject)
 
-def cube_note(source_table='sample_casedef',
+def cube_note(source_table=NOTE_SOURCE_TABLE,
               table_cols=None,
               table_name=None,
               min_subject=CUBE_MIN_SUBJECTS) -> Path:

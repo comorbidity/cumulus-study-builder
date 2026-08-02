@@ -152,26 +152,6 @@ def make_casedef() -> list[Path]:
     ]
 
 #-----------------------------------------------------------------------------
-# Samples from Case Definition
-#-----------------------------------------------------------------------------
-def make_casedef_samples() -> list[Path]:
-    table_cols = ['fhir_resource',
-                  'note_code',
-                  'note_display',
-                  'note_system']
-
-    sample_casedef = f'{PREFIX}__sample_casedef'
-    temporality = ['pre', 'peri', 'peri_post', 'post']
-
-    source_table_list = [sample_casedef]
-    source_table_list+= [f'{sample_casedef}_{t}' for t in temporality]
-
-    target_output = [cube_patient(source_table, table_cols) for source_table in source_table_list]
-    target_output+= [cube_note(source_table, table_cols) for source_table in source_table_list]
-
-    return target_output
-
-#-----------------------------------------------------------------------------
 # Variables (coded vars matching FHIR resource)
 #-----------------------------------------------------------------------------
 def make_variable_union() -> list[Path]:
@@ -181,9 +161,7 @@ def make_variable_union() -> list[Path]:
                                  'variable',
                                  'code',
                                  'system',
-                                 'display',
-                                 'enc_type_display',
-                                 'enc_servicetype_display']),
+                                 'display',]),
     ]
 
 #-----------------------------------------------------------------------------
@@ -192,18 +170,15 @@ def make_variable_union() -> list[Path]:
 def make() -> list[Path]:
     study_population_sql_list = make_study_encounter()
     casedef_sql_list = make_casedef()
-    sample_sql_list = make_casedef_samples()
     variable_sql_list = make_variable_union()
 
     actions = [
         manifest.SqlAction(study_population_sql_list, 'SQL cube study population'),
         manifest.SqlAction(variable_sql_list, 'SQL cube variable union'),
         manifest.SqlAction(casedef_sql_list, 'SQL cube casedef'),
-        manifest.SqlAction(sample_sql_list, 'SQL cube casedef sample'),
         manifest.ExportAction(study_population_sql_list, 'export cube tables study populations'),
         manifest.ExportAction(variable_sql_list, 'export cube tables variable union'),
         manifest.ExportAction(casedef_sql_list, 'export cube tables casedef'),
-        manifest.ExportAction(sample_sql_list, 'export cube tables casedef sample'),
     ]
     actions.reverse() # fail fast and get more interesting results earlier
     actions.extend(study_meta.make_actions())
@@ -213,13 +188,6 @@ def make() -> list[Path]:
 #-----------------------------------------------------------------------------
 # MAIN method
 #-----------------------------------------------------------------------------
-if __name__ == "__main__":
-    for output_toml in make():
-        print(output_toml)
-
-def make() -> list[Path]:
-    return [manifest.save_actions_toml([], 'cube.toml')]
-
 if __name__ == '__main__':
     for target in make():
         print(target)
