@@ -1,24 +1,71 @@
 # cumulus-study-builder
 
-A generic, disease-agnostic **starter** for building a
-[Cumulus Library](https://docs.smarthealthit.org/cumulus/) study over FHIR data. The
-reusable **spine** is a set of Python generators that render Jinja SQL templates into
-Athena tables from a few CSV inputs, plus a clinical-note extraction layer (LLM
-chart-review and Elastic retrieval) and a generic **eligible** analytic layer (best
-case/index date, therapy lines, a time-to-event outcome, and a survival / PSM analysis
-spine) for target trial emulation, CDS, and patient matching.
+The shared, **versioned spine** for building
+[Cumulus Library](https://docs.smarthealthit.org/cumulus/) studies over FHIR data:
+Python generators that render Jinja SQL templates into Athena tables from a few CSV
+inputs, plus a clinical-note extraction layer (LLM chart-review and Elastic
+retrieval), a generic **eligible** analytic layer, and nine agent **skills** —
+all installed as ONE pip package that every study depends on. Studies do NOT fork
+this repo.
 
-Combine this repo with the nine **skills** (in `.agents/skills/`: study-builder,
-study-encounter, study-variable, rxnorm, loinc, case-definition, chart-review,
-rapid-elastic, eligible) and a researcher can stand up a new study by editing CSVs and
-Pydantic models — the SQL is generated. See `AGENTS.md` for the cross-agent layout.
+## Install & create a study (newcomers start here)
 
-## Packaging
+```bash
+pip install "cumulus-study-builder @ git+https://github.com/smart-on-fhir/cumulus-study-builder.git@v1.0.0"
+cumulus-study-builder init my-study --prefix mystudy
+cd cumulus-library-my-study
+pip install -e .
+cumulus-study-builder build          # renders every athena/*.sql + submanifest TOML
+cumulus-library build --target mystudy
+```
 
-This repo is the reusable **module** (the spine — generators, templates, skills)
-together with a worked `example` study. Fork it to own a new study. See
-`PACKAGING.md` for the module + fork-and-own model, why it beats vendoring the spine
-per study, and how it maps to the Cumulus ecosystem.
+`init` scaffolds a THIN study repo: starter spreadsheets, a `manifest.toml` with
+your `study_prefix`, an empty `template/` for overrides, tests, and the agent
+skills (synced into `.claude/`, `.agents/`, `.codex/`, `.gemini/`). Everything
+else — generators, canonical SQL templates, skills — comes from the installed,
+pinned builder.
+
+## The distribution model
+
+| Layer | Lives in | Changes via |
+|---|---|---|
+| **Spine** — `tools/*.py` generators, `template/*.sql`, `skills/` | this repo, installed via pip, pinned by tag | PR review here, then a tagged release |
+| **Study inputs** — `spreadsheet/*.csv`, `manifest.toml`, `study_builder.toml`, template *overrides*, study-specific tools | each study repo | PRs in the study repo |
+| **Generated** — `athena/<prefix>__*.sql`, submanifest `*.toml` | each study repo | never hand-edit; re-run `cumulus-study-builder build` |
+
+Three mechanisms make the thin-study model work:
+
+1. **Dynamic study root** (`tools/studydir.py`): every generator resolves the
+   study package dir from `CUMULUS_STUDY_DIR` or the working directory — never
+   from the installed package location.
+2. **Study-first template resolution** (`tools/template.py`): a template in the
+   study's own `template/` overrides the packaged one with the same filename;
+   delete the override to fall back to the shared, PR-reviewed copy.
+3. **Skill sync** (`cumulus-study-builder sync-skills`): packaged skills are
+   copied into the study's agent dirs with a version marker; a skill dir
+   WITHOUT the marker is yours and is never touched.
+
+Per-study knobs (`data_package_version`, `cube_min_subjects`, `cube_as_view`,
+`encounter_ref`) live in `study_builder.toml` next to the study's
+`manifest.toml`; environment variables (`CUMULUS_*`) override.
+
+## Updating a study to a new spine release
+
+```bash
+# in the study repo: bump the tag in pyproject.toml, then
+pip install -e .
+cumulus-study-builder build     # regenerate
+git diff                        # review exactly what the new spine changes
+cumulus-study-builder sync-skills
+```
+
+The regenerated SQL diff IS the review artifact: a spine bump lands in a study
+as an ordinary PR whose diff shows precisely what changed in the study's tables.
+
+This repo also remains a runnable worked `example` study (the packaged
+`cumulus_study_builder/` dir doubles as one), so its own tests exercise the
+whole pipeline. See `PACKAGING.md` for the history and rationale of this model
+and `MIGRATION.md` for converting a pre-existing vendored study.
 
 ## The stages (the spine)
 
@@ -52,11 +99,9 @@ each aspect (`dx_example`, `rx_example`, `lab_example`, `diag_example`, `proc_ex
 
 ## Set your study prefix
 
-Tables are named `<study_prefix>__<table>`. Set it in **two** places (keep them
-identical):
-
-- `cumulus_study_builder/manifest.toml` → `study_prefix`
-- `cumulus_study_builder/tools/tablespace.py` → `PREFIX`
+Tables are named `<study_prefix>__<table>`. Set it in **one** place:
+`manifest.toml` → `study_prefix`. (`tools/tablespace.py` reads it from there;
+the old two-places rule is gone.)
 
 The starter ships with the placeholder `example`.
 

@@ -1,10 +1,9 @@
-# Stock pyproject.toml for installing dependencies and packaging.
-# Change `name`, `description`, `Source`, and the flit include to your study.
+# cumulus-study-builder: installed once per environment, pinned by studies.
+# Studies do NOT fork this repo -- they depend on it (see README).
 
 [project]
-# Change this to reference the name of your study
 name = "cumulus-study-builder"
-version = "0.1.0"
+version = "1.0.0"
 requires-python = ">= 3.11"
 dependencies = [
     # keep to the latest minor version of cumulus-library
@@ -18,7 +17,7 @@ dependencies = [
     # sampling + rapid-elastic pipeline):
     # "rapid-elastic @ git+https://github.com/smart-on-fhir/rapid-elastic.git@main",
 ]
-description = "A generic Cumulus Library study starter (study-builder spine)."
+description = "The shared, versioned spine for Cumulus Library studies: generators, SQL templates, and agent skills."
 readme = "README.md"
 license = { text = "Apache License 2.0" }
 classifiers = [
@@ -31,8 +30,10 @@ classifiers = [
 [project.urls]
 Home = "https://smarthealthit.org/cumulus-a-universal-sidecar-for-a-smart-learning-healthcare-system/"
 Documentation = "https://docs.smarthealthit.org/cumulus/"
-# Change this to your github URL
 Source = "https://github.com/smart-on-fhir/cumulus-study-builder"
+
+[project.scripts]
+cumulus-study-builder = "cumulus_study_builder.cli:main"
 
 [build-system]
 requires = ["flit_core >=3.4,<4"]
@@ -43,5 +44,4 @@ dev = ["black", "pylint"]
 test = ["pytest", "pytest-cov", "pytest-xdist"]
 
 [tool.flit.sdist]
-# change this to the name of the study folder inside the module directory
 include = ["cumulus_study_builder/"]

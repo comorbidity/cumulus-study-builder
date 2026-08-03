@@ -1,8 +1,10 @@
 # Packaging — module + fork-and-own study template
 
-**Decision (per andy): distribute the spine as an installable MODULE, and let each
-study FORK a thin template that it owns.** This records the reasoning and the
-concrete path to get fully there.
+**Status: the module end-state described below HAS LANDED (v1.0.0).** The spine is
+a pip-installable package with a CLI (`init`, `build`, `sync-skills`); the five
+reference studies were migrated off their vendored copies with byte-identical
+regenerated output (see `MIGRATION.md`). The rest of this document records the
+original reasoning.
 
 ## Why (what the reference studies showed)
 
@@ -47,8 +49,8 @@ replace the study inputs). That is the **fork-and-own** path and it works now:
 4. `pip install -e .` → `python -m cumulus_library_<name>.tools.study_builder` →
    `cumulus-library build`.
 
-**To become a true installable module that studies depend on (rather than fork), one
-code change is needed:** `tools/filetool.py` currently resolves every path relative to
+**The change that made this a true installable module (landed in v1.0.0 as
+`tools/studydir.py`):** `tools/filetool.py` currently resolves every path relative to
 the installed package dir (`Path(__file__).parent.parent`). For a study to keep its
 own inputs/outputs while importing the module, `filetool` must resolve the *study
 root* from the working directory or a `CUMULUS_STUDY_DIR` env var (mirroring
