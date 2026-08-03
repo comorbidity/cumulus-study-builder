@@ -92,6 +92,13 @@ Code systems by aspect (for choosing `system`):
 - **rx:** RxNorm `http://www.nlm.nih.gov/research/umls/rxnorm`, plus NDC / local. For
   medication valuesets, use the **rxnorm** companion skill (class-first RxNorm /
   RxClass authoring) — it produces the `rx_class_*` CSV this stage registers.
+  **Ingredient codes must be expanded to products:** `MedicationRequest` /
+  `MedicationDispense` code the order at the product level (an RxNorm `SCD`/`SBD`/`GPCK`/
+  `BPCK` concept, usually with strength, form, route, and brand), and the cohort join is
+  exact `code` + `system` — so a valueset holding only the ingredient (`TTY=IN`) matches
+  almost no real orders. The **rxnorm** skill expands each ingredient into its
+  prescribable/dispensable descendants (keeping the ingredient rows too); don't register
+  a bare-ingredient rx valueset without that expansion.
 - **lab / diag:** LOINC `http://loinc.org`, plus SNOMED and local `urn:oid:...`.
 - **proc:** CPT `http://www.ama-assn.org/go/cpt`, HCPCS, ICD-10-PCS, SNOMED.
 
@@ -134,8 +141,10 @@ the researcher scans and prunes.
 **"Clarifying questions"** — elicit intent before writing. Ask the few questions that
 actually change the code selection: exact concept boundary; which code systems to
 include; breadth (specific codes only, or broader/related at a higher tier);
-inclusions/exclusions (e.g. exclude "history of", unspecified); for rx,
-ingredient-level or include combination products / brand names. Then generate.
+inclusions/exclusions (e.g. exclude "history of", unspecified); for rx, the breadth of
+the ingredient→product expansion (generic-only vs also brand and packs, include or
+exclude combination products) — expanding an ingredient to products is the default, not
+an option, so the question is how wide, not whether. Then generate.
 
 In **both** modes, end with the same honest caveat: **the codes are candidates.**
 Proposed codes must be verified against an authoritative source (VSAC value sets,

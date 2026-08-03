@@ -52,6 +52,11 @@ Use for cross-vocabulary (ATC, NDC, SNOMED, cross-SAB) beyond RxNorm.
 
 A generic-only valueset = `SCD` + `GPCK`. add `SBD` + `BPCK` for brands.
 
+FHIR `MedicationRequest`/`MedicationDispense` code at the product level (`SCD`/`SBD`/
+`GPCK`/`BPCK`), so an ingredient (`IN`) valueset must be expanded down to these TTYs to
+match real orders. Keep the `IN`/`MIN`/`PIN` rows too — some orders code at the
+ingredient level — and see the expansion SQL below.
+
 ## RxNorm relationships (RELA) — the expansion graph
 
 `rxnorm__rxnrel.rela` (directional. each has an inverse):
@@ -160,6 +165,11 @@ JOIN   rxnorm.rxnorm__rxnconso p
       AND p.tty IN ('SCD','SBD','GPCK','BPCK');   -- add SCDC/SBDC for components
 ```
 
+For retrospective data, also keep inactive/retired products so older orders still
+match: relax `suppress = 'N'` (or union the retired rxcui from history) rather than
+restricting to currently-active concepts. Keep the seed `IN`/`MIN`/`PIN` rows in the
+final valueset alongside the expanded products — an order may code at either level.
+
 Attach NDC (only if your data is NDC-coded):
 
 ```sql
@@ -231,8 +241,12 @@ when you want a fast, study-embedded valueset.
 
 ## Verification checklist
 
-- rxcui are current (RxNorm is monthly. check retired/remapped via RxNav or
-  `rxnorm__rxncui` history).
+- rxcui breadth spans the product TTYs (`SCD`/`SBD`/`GPCK`/`BPCK`), not just the
+  ingredient (`IN`) — FHIR medication orders are product-coded, so an ingredient-only
+  set matches almost nothing.
+- active AND inactive/retired rxcui are included for retrospective data (older
+  `medicationrequest`/`medicationdispense` reference retired concepts). check
+  retired/remapped via RxNav or `rxnorm__rxncui` history. RxNorm is versioned monthly.
 - TTY set matches the intended breadth (generic-only vs +brand vs +packs).
 - Combination products handled deliberately (`MIN`/`SCDC` decisions stated).
 - Routes/dose forms filtered if the class is route-specific (via `DF`/`DFG`).

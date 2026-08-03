@@ -67,6 +67,35 @@ One code per row. The cohort join in study-variable matches on `code` + `system`
 `code`/`system` must match how medications appear in `core__medicationrequest` /
 `core__medicationdispense`. That is what the discovery presence check verifies.
 
+## Expand ingredients to products (the core rule)
+
+`MedicationRequest` and `MedicationDispense` code the order at the **product** level —
+an `SCD` / `SBD` / `GPCK` / `BPCK` concept that usually carries strength, dose form,
+route, and (for brands) a trade name. They rarely carry the bare ingredient. Because
+the study-variable cohort join is exact `code` + `system`, a valueset that lists only
+the ingredient (`TTY=IN`) matches almost none of the real orders. So **every ingredient
+in an rx valueset must be expanded into the products that contain it** — that expansion
+is the whole point of this skill.
+
+Expand each ingredient down the RxNorm graph to its prescribable/dispensable
+descendants (`SCD`/`SBD`/`GPCK`/`BPCK`, plus `SCDC`/`SBDC` components when the data
+codes at that level), and **keep the ingredient rows too**, so an order coded at either
+level still links. Include **inactive / retired** rxcui alongside active ones:
+retrospective `MedicationRequest`/`MedicationDispense` reference concepts from older
+RxNorm releases, so an active-only valueset silently drops historical orders. The
+`discovery__code_sources` presence check (below) then tells you which of the expanded
+codes actually occur in the data.
+
+This is the method validated in the near-comprehensive RxNorm opioid valueset work —
+each opioid ingredient expanded through all RxNorm relationships to every drug-product
+formulation — which reached >99.9% recall against real prescription rxcui precisely
+because it expanded ingredients to products rather than listing ingredients alone. The
+Cumulus **valueset workflow** (below) is the reproducible engine for the same
+expansion. One caution from that work: expanding a **combination product** pulls in its
+other ingredients (e.g. codeine combinations dragging in aspirin, ibuprofen,
+guaifenesin), so disambiguate deliberately — keep only products whose ingredient set
+you intend.
+
 ## Class-first method (the default)
 
 A drug class is defined once, then expanded down the RxNorm graph:
@@ -85,7 +114,9 @@ A drug class is defined once, then expanded down the RxNorm graph:
 4. **Emit rxcui + display**, tagged with the seeding `keyword`. optionally attach NDC
    (see the reference) if your medications are NDC-coded.
 
-Single-ingredient or named-drug valuesets are the same pipeline starting at step 2.
+Single-ingredient, named-drug, or already-have-the-ingredient-codes valuesets use the
+same pipeline entered at step 3 (ingredient → clinical drugs and products): skip naming
+a class and expand the ingredient(s) directly.
 
 ## The derivation ladder (APIs and knowledge first, then written SQL)
 
