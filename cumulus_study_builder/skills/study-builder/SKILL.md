@@ -69,7 +69,24 @@ skill.
 
 3. **Ask the design intent.** Is the study primarily for **TTE** (target trial
    emulation), **CDS** (clinical decision support), **both**, or **something else**? This
-   sets how the eligible stage frames index date, exposure, and outcomes.
+   sets how the eligible stage frames index date, exposure, and outcomes. Guide the
+   researcher with:
+
+   - **TTE (target trial emulation):** Choose TTE when your question collapses to one
+     well-defined causal contrast — treatment strategy A vs B on a pre-specified outcome,
+     for a population fixed at a single time zero — and the eligible stage should reduce
+     each patient to an index date, an arm (the casedef arm column), an exposure, an
+     outcome, and risk-set membership for a KM/Cox/PSM analysis.
+   - **CDS (clinical decision support):** Choose CDS when your question is per-patient and
+     open-ended — this patient's likely trajectory and which similar patients inform it —
+     and the eligible stage should preserve the full longitudinal structure (every therapy
+     line, its dates, and response/failure) plus a patient-similarity/matching layer,
+     rather than collapsing to a single contrast.
+
+   Treat the choice as a dial, not a wall: the same clean therapy-line and outcome
+   definitions that make a TTE valid are what make a CDS's similar-patient displays
+   trustworthy, so **both** is a normal answer, and **something else** slides along the
+   same collapse-to-estimand ↔ preserve-trajectory-plus-matching axis.
 
 4. **Ask for the substance.** Elicit, in narrative form: the **study variables of
    interest**, a **narrative description of the case definition**, and the **outcomes of
