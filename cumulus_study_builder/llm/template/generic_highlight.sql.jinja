@@ -1,0 +1,44 @@
+-- GENERIC starter: Label Studio span highlights from any NLP annotation.
+-- Each `mentions` entry declares how to surface one mention as a highlight:
+--   ls_variable_name / ls_subvalue_name -> Label Studio label + sublabel
+--   value_path -> drill-down under src.result to the surfaced value
+--   span_path  -> drill-down under src.result to the spans array to UNNEST
+--   filter     -> not_null | not_mentioned | nota (NONE_OF_THE_ABOVE)
+-- The parent mention struct is value_path minus its last segment.
+CREATE TABLE {{ dest_table }} AS
+{%- for table_name in table_names %}
+    {%- for mention_config in mentions %}
+    {%- set mention_path = mention_config.value_path.rsplit('.', 1)[0] %}
+    SELECT
+        src.note_ref,
+        src.subject_ref,
+        src.generated_on,
+        src.task_version,
+        src.system_fingerprint,
+        '{{ table_name }}' AS origin,
+        '{{ mention_config.ls_variable_name }}' AS label,
+        CONCAT(CAST(span[1] AS VARCHAR), ':', CAST(span[2] AS VARCHAR)) AS span,
+        '{{ mention_config.ls_subvalue_name }}' AS sublabel_name,
+        CAST(src.result.{{ mention_config.value_path }} AS VARCHAR) AS sublabel_value
+    FROM
+        {{ table_name }} AS src,
+        UNNEST(src.result.{{ mention_config.span_path }}) AS t3(span)
+    WHERE
+        src.task_version = {{ task_version }}
+        AND src.result.{{ mention_path }} IS NOT NULL
+    {%- if mention_config.filter == 'not_null' %}
+        AND src.result.{{ mention_config.value_path }} IS NOT NULL
+    {%- elif mention_config.filter == 'not_mentioned' %}
+        AND src.result.{{ mention_config.value_path }} != 'NOT_MENTIONED'
+    {%- elif mention_config.filter == 'nota' %}
+        AND src.result.{{ mention_config.value_path }} != 'NONE_OF_THE_ABOVE'
+    {%- endif %}
+    {%- if not loop.last %}
+    UNION ALL
+    {%- endif %}
+    {%- endfor %}
+    {%- if not loop.last %}
+    UNION ALL
+    {%- endif %}
+{%- endfor %}
+;

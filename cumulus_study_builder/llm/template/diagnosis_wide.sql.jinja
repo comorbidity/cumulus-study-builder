@@ -1,0 +1,27 @@
+-- GENERIC starter: flatten an NLP diagnosis annotation into a wide table.
+-- Matches llm/models/diagnosis.py (DiseaseDiagnosisAnnotation). One row per note.
+CREATE TABLE {{ dest_table }} AS
+{%- for table_name in table_names %}
+SELECT  DISTINCT
+        nlp.note_ref,
+        nlp.encounter_ref,
+        nlp.subject_ref,
+        '{{ table_name }}' AS origin,
+        nlp.generated_on         AS generated_on,
+        nlp.task_version         AS task_version,
+        nlp.system_fingerprint   AS system_fingerprint,
+        nlp.result.disease_type.disease_type,
+        nlp.result.age_at_diagnosis.age_at_diagnosis_months,
+        nlp.result.diagnosis_date.diagnosis_date,
+        nlp.result.diagnosis_date.diagnosis_date_precision,
+        nlp.result.diagnosis_date_gold.diagnosis_date_gold,
+        nlp.result.diagnosis_date_gold.diagnosis_date_gold_precision,
+        nlp.result.activity_and_severity.disease_activity,
+        nlp.result.activity_and_severity.disease_severity
+FROM    {{ table_name }} AS nlp
+WHERE   nlp.task_version = {{ task_version }}
+{%- if not loop.last %}
+UNION ALL
+{%- endif %}
+{%- endfor %}
+;

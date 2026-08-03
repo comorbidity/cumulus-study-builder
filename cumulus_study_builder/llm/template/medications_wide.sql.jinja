@@ -1,0 +1,28 @@
+-- GENERIC starter: flatten an NLP medication annotation into a wide table.
+-- Matches llm/models/medications.py (ExampleMedicationAnnotation -> rx_annotations[]).
+-- Rename/trim the selected columns to match your study's medication model.
+CREATE TABLE {{ dest_table }} AS
+{%- for table_name in table_names %}
+SELECT  DISTINCT
+        nlp.note_ref,
+        nlp.encounter_ref,
+        nlp.subject_ref,
+        '{{ table_name }}' AS origin,
+        nlp.generated_on         AS generated_on,
+        nlp.task_version         AS task_version,
+        nlp.system_fingerprint   AS system_fingerprint,
+        med.rx_class.rx_class,
+        med.rx_status.rx_status,
+        med.rx_start_date.rx_start_date,
+        med.rx_start_date.rx_start_date_precision,
+        med.rx_response.rx_response,
+        ade.ade
+FROM    {{ table_name }} AS nlp
+CROSS   JOIN UNNEST(nlp.result.rx_annotations)   AS t(med)
+LEFT    JOIN UNNEST(med.rx_adverse_drug_events)  AS t(ade) ON TRUE
+WHERE   nlp.task_version = {{ task_version }}
+{%- if not loop.last %}
+UNION ALL
+{%- endif %}
+{%- endfor %}
+;

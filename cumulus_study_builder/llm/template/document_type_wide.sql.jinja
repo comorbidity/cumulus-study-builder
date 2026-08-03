@@ -1,0 +1,22 @@
+-- GENERIC starter: flatten an NLP document-type annotation into a wide table.
+-- Matches llm/models/document_type.py (DocumentTypeAnnotation -> document_type).
+CREATE TABLE {{ dest_table }} AS
+{%- for table_name in table_names %}
+SELECT  DISTINCT
+        nlp.note_ref,
+        nlp.encounter_ref,
+        nlp.subject_ref,
+        '{{ table_name }}' AS origin,
+        nlp.generated_on         AS generated_on,
+        nlp.task_version         AS task_version,
+        nlp.system_fingerprint   AS system_fingerprint,
+        nlp.result.document_type.has_mention,
+        UPPER(nlp.result.document_type.document_type) AS document_type,
+        nlp.result.document_type.confidence
+FROM    {{ table_name }} AS nlp
+WHERE   nlp.task_version = {{ task_version }}
+{%- if not loop.last %}
+UNION ALL
+{%- endif %}
+{%- endfor %}
+;

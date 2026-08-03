@@ -1,0 +1,23 @@
+-- GENERIC starter: flatten an NLP surgery annotation into a wide table.
+-- Matches llm/models/surgery.py (SurgeryAnnotation -> surgery_mentions[]).
+CREATE TABLE {{ dest_table }} AS
+{%- for table_name in table_names %}
+SELECT  DISTINCT
+        nlp.note_ref,
+        nlp.encounter_ref,
+        nlp.subject_ref,
+        '{{ table_name }}' AS origin,
+        nlp.generated_on         AS generated_on,
+        nlp.task_version         AS task_version,
+        nlp.system_fingerprint   AS system_fingerprint,
+        surgery.surgery,
+        surgery.surgery_date,
+        surgery.surgery_date_precision
+FROM    {{ table_name }} AS nlp,
+        UNNEST(nlp.result.surgery_mentions) AS t(surgery)
+WHERE   nlp.task_version = {{ task_version }}
+{%- if not loop.last %}
+UNION ALL
+{%- endif %}
+{%- endfor %}
+;
