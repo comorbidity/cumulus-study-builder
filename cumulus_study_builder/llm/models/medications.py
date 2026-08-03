@@ -7,7 +7,7 @@ from enum import StrEnum
 from pydantic import BaseModel, Field
 from cumulus_study_builder.llm.models.base import SpanAugmentedMention, DatePrecision
 
-# ExampleTreatmentAnnotation
+# ExampleMedicationAnnotation
 # └── rx_annotations: list[RxAnnotation]
 #     ├── rx_start_date: RxStartDateMention
 #     ├── rx_class: RxClassMention
@@ -174,9 +174,9 @@ class RxAnnotation(BaseModel):
         ),
     )
 
-class ExampleTreatmentAnnotation(BaseModel):
+class ExampleMedicationAnnotation(BaseModel):
     """
-    EXAMPLE treatment annotation. Create one RxAnnotation per medication context.
+    EXAMPLE medication annotation. Create one RxAnnotation per medication context.
     Rename and extend per your study objective.
     """
     rx_annotations: list[RxAnnotation] = Field(
