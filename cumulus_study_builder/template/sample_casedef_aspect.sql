@@ -1,7 +1,11 @@
--- RECONSTRUCTED. per-aspect note sample. overlay source via SYNC.md.
+-- Canonical sample-stage template (absorbed from the ibd-cds source study,
+-- adapted to the encounter paradigm: cohort_study_population* -> encounter*).
 CREATE  TABLE   {{ prefix }}__sample_casedef_{{ aspect }} AS
-SELECT  DISTINCT sample.*
-FROM    {{ prefix }}__sample_casedef                      AS sample
-JOIN    {{ prefix }}__encounter_{{ aspect }} AS aspect
-ON      sample.{{ encounter_ref }} = aspect.{{ encounter_ref }}
+SELECT  DISTINCT
+        c.subject_ref, c.note_ordinal, c.days_since, c.note_ref, c.group_name
+FROM    {{ prefix }}__sample_casedef                        as c
+JOIN    {{ prefix }}__cohort_variable_union_{{ aspect }}    as v
+ON      c.{{ encounter_ref }} = v.{{ encounter_ref }}
 ;
+
+
