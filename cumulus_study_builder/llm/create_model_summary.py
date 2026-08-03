@@ -8,15 +8,15 @@ import pydantic
 from typing import Any, get_args, get_origin, Union
 from types import UnionType
 
-from cumulus_study_builder.llm.models.treatment import ExampleTreatmentAnnotation
+from cumulus_study_builder.llm.models.diagnosis import DiseaseDiagnosisAnnotation
+from cumulus_study_builder.llm.models.document_type import DocumentTypeAnnotation
+from cumulus_study_builder.llm.models.document_topic import TopicRelevanceAnnotation
+from cumulus_study_builder.llm.models.medications import ExampleMedicationAnnotation
+from cumulus_study_builder.llm.models.surgery import SurgeryAnnotation
 from cumulus_study_builder.llm.models.lab_base import ExampleLabPanelAnnotation
 from cumulus_study_builder.llm.models.lab_panel_cbc import CBCPanelAnnotation
 from cumulus_study_builder.llm.models.lab_panel_cmp import CMPPanelAnnotation
-from cumulus_study_builder.llm.models.lab_panel_iron import IronStudiesAnnotation
-from cumulus_study_builder.llm.models.diagnosis import DiseaseDiagnosisAnnotation
-from cumulus_study_builder.llm.models.surgery import SurgeryAnnotation
-from cumulus_study_builder.llm.models.document_type import DocumentTypeAnnotation
-from cumulus_study_builder.llm.models.document_topic import TopicRelevanceAnnotation
+from cumulus_study_builder.llm.models.lab_panel_iron import IronPanelAnnotation
 
 BASE_DIR = pathlib.Path(__file__).resolve().parent
 _INDENT = "    "
@@ -85,17 +85,16 @@ def create(annotation, filename: str) -> pathlib.Path:
 
 def create_all() -> list[pathlib.Path]:
     return [
-        create(ExampleTreatmentAnnotation, "example_treatment_summary.txt"),
+        create(ExampleMedicationAnnotation,"example_medication_summary.txt"),
         create(ExampleLabPanelAnnotation,  "example_lab_panel_summary.txt"),
         create(CBCPanelAnnotation,         "cbc_panel_summary.txt"),
         create(CMPPanelAnnotation,         "cmp_panel_summary.txt"),
-        create(IronStudiesAnnotation,      "iron_studies_summary.txt"),
+        create(IronPanelAnnotation,"iron_panel_summary.txt"),
         create(DiseaseDiagnosisAnnotation, "diagnosis_summary.txt"),
         create(SurgeryAnnotation,          "surgery_summary.txt"),
         create(DocumentTypeAnnotation,     "document_type_summary.txt"),
         create(TopicRelevanceAnnotation,   "topic_relevance_summary.txt"),
     ]
-
 
 if __name__ == "__main__":
     for p in create_all():
